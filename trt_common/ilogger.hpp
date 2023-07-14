@@ -1,12 +1,12 @@
 
-
-#ifndef DEPLOY_ILOGGER_HPP
-#define DEPLOY_ILOGGER_HPP
+#ifndef ILOGGER_HPP
+#define ILOGGER_HPP
 
 #include <string>
 #include <vector>
 #include <tuple>
 #include <time.h>
+
 
 namespace iLogger{
 
@@ -31,8 +31,8 @@ namespace iLogger{
     string date_now();
     string time_now();
     string gmtime_now();
-    string gmtime(time_t t);
-    time_t gmtime2ctime(const string& gmt);
+	string gmtime(time_t t);
+	time_t gmtime2ctime(const string& gmt);
     void sleep(int ms);
 
     bool isfile(const string& file);
@@ -53,7 +53,7 @@ namespace iLogger{
     size_t file_size(const string& file);
 
     bool begin_with(const string& str, const string& with);
-    bool end_with(const string& str, const string& with);
+	bool end_with(const string& str, const string& with);
     vector<string> split_string(const string& str, const std::string& spstr);
     string replace_string(const string& str, const string& token, const string& value, int nreplace=-1, int* out_num_replace=nullptr);
 
@@ -63,17 +63,17 @@ namespace iLogger{
     tuple<uint8_t, uint8_t, uint8_t> random_color(int id);
 
     //   abcdefg.pnga          *.png      > false
-    //   abcdefg.png           *.png      > true
-    //   abcdefg.png          a?cdefg.png > true
-    bool pattern_match(const char* str, const char* matcher, bool igrnoe_case = true);
+	//   abcdefg.png           *.png      > true
+	//   abcdefg.png          a?cdefg.png > true
+	bool pattern_match(const char* str, const char* matcher, bool igrnoe_case = true);
     vector<string> find_files(
-            const string& directory,
-            const string& filter = "*", bool findDirectory = false, bool includeSubDirectory = false);
+        const string& directory, 
+        const string& filter = "*", bool findDirectory = false, bool includeSubDirectory = false);
 
     string align_blank(const string& input, int align_size, char blank=' ');
     bool save_file(const string& file, const vector<uint8_t>& data, bool mk_dirs = true);
     bool save_file(const string& file, const string& data, bool mk_dirs = true);
-    bool save_file(const string& file, const void* data, size_t length, bool mk_dirs = true);
+	bool save_file(const string& file, const void* data, size_t length, bool mk_dirs = true);
 
     // 捕获：SIGINT(2)、SIGQUIT(3)
     int while_loop();
@@ -92,6 +92,7 @@ namespace iLogger{
 
     inline int upbound(int n, int align = 32){return (n + align - 1) / align * align;}
     string join_dims(const vector<int64_t>& dims);
-}
+};
 
-#endif //DEPLOY_ILOGGER_HPP
+
+#endif // ILOGGER_HPP

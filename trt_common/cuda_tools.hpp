@@ -1,11 +1,10 @@
-
-
-#ifndef DEPLOY_CUDA_TOOLS_HPP
-#define DEPLOY_CUDA_TOOLS_HPP
+#ifndef CUDA_TOOLS_HPP
+#define CUDA_TOOLS_HPP
 
 
 ///  系统关于CUDA的功能函数
 
+ 
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include "ilogger.hpp"
@@ -64,10 +63,11 @@ namespace CUDATools{
     public:
         AutoDevice(int device_id = 0);
         virtual ~AutoDevice();
-
+    
     private:
         int old_ = -1;
     };
 }
 
-#endif //DEPLOY_CUDA_TOOLS_HPP
+
+#endif // CUDA_TOOLS_HPP

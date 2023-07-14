@@ -1,6 +1,4 @@
 
-
-
 #include "ilogger.hpp"
 #include <stdarg.h>
 #include <string.h>
@@ -10,23 +8,22 @@
 #include <mutex>
 #include <memory>
 #include <vector>
-#include <stack>
 #include <thread>
 #include <atomic>
 #include <fstream>
 #include <sstream>
+#include <stack>
 #include <functional>
 #include <signal.h>
-
+#include <dirent.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <dirent.h>
+
 
 #define __GetTimeBlock						\
     time_t timep;							\
     time(&timep);							\
     tm& t = *(tm*)localtime(&timep);
-
 
 
 namespace iLogger{
@@ -53,13 +50,13 @@ namespace iLogger{
         const float t = v * (1 - (1 - f) * s);
         float r, g, b;
         switch (h_i) {
-            case 0:r = v; g = t; b = p;break;
-            case 1:r = q; g = v; b = p;break;
-            case 2:r = p; g = v; b = t;break;
-            case 3:r = p; g = q; b = v;break;
-            case 4:r = t; g = p; b = v;break;
-            case 5:r = v; g = p; b = q;break;
-            default:r = 1; g = 1; b = 1;break;}
+        case 0:r = v; g = t; b = p;break;
+        case 1:r = q; g = v; b = p;break;
+        case 2:r = p; g = v; b = t;break;
+        case 3:r = p; g = q; b = v;break;
+        case 4:r = t; g = p; b = v;break;
+        case 5:r = v; g = p; b = q;break;
+        default:r = 1; g = 1; b = 1;break;}
         return make_tuple(static_cast<uint8_t>(b * 255), static_cast<uint8_t>(g * 255), static_cast<uint8_t>(r * 255));
     }
 
@@ -86,31 +83,16 @@ namespace iLogger{
     }
 
     size_t file_size(const string& file){
-#if defined(U_OS_LINUX)
+
         struct stat st;
         stat(file.c_str(), &st);
         return st.st_size;
-#elif defined(U_OS_WINDOWS)
-        WIN32_FIND_DATAA find_data;
-        HANDLE hFind = FindFirstFileA(file.c_str(), &find_data);
-        if (hFind == INVALID_HANDLE_VALUE)
-            return 0;
-
-        FindClose(hFind);
-        return (uint64_t)find_data.nFileSizeLow | ((uint64_t)find_data.nFileSizeHigh << 32);
-#endif
     }
 
     time_t last_modify(const string& file){
-
-#if defined(U_OS_LINUX)
         struct stat st;
         stat(file.c_str(), &st);
         return st.st_mtim.tv_sec;
-#elif defined(U_OS_WINDOWS)
-        INFOW("LastModify has not support on windows os");
-        return 0;
-#endif
     }
 
     void sleep(int ms) {
@@ -185,7 +167,7 @@ namespace iLogger{
         string _path = path;
         char* dir_ptr = (char*)_path.c_str();
         char* iter_ptr = dir_ptr;
-
+        
         bool keep_going = *iter_ptr not_eq 0;
         while (keep_going){
 
@@ -212,14 +194,10 @@ namespace iLogger{
 
     bool isfile(const string& file){
 
-#if defined(U_OS_LINUX)
         struct stat st;
         stat(file.c_str(), &st);
         return S_ISREG(st.st_mode);
-#elif defined(U_OS_WINDOWS)
-        INFOW("is_file has not support on windows os");
-        return 0;
-#endif
+
     }
 
     FILE* fopen_mkdirs(const string& path, const string& mode){
@@ -229,13 +207,9 @@ namespace iLogger{
 
         int p = path.rfind('/');
 
-#if defined(U_OS_WINDOWS)
-        int e = path.rfind('\\');
-        p = std::max(p, e);
-#endif
         if (p == -1)
             return nullptr;
-
+        
         string directory = path.substr(0, p);
         if (!mkdirs(directory))
             return nullptr;
@@ -323,12 +297,12 @@ namespace iLogger{
         void write(const string& line) {
 
             lock_guard<mutex> l(logger_lock_);
-            if(logger_shutdown)
+            if(logger_shutdown) 
                 return;
 
             if (!keep_run_) {
 
-                if(flush_thread_)
+                if(flush_thread_) 
                     return;
 
                 cache_.reserve(1000);
@@ -392,17 +366,10 @@ namespace iLogger{
             if (logger_directory.empty())
                 logger_directory = ".";
 
-#if defined(U_OS_LINUX)
             if (logger_directory.back() not_eq '/') {
                 logger_directory.push_back('/');
             }
-#endif
 
-#if defined(U_OS_WINDOWS)
-            if (logger_directory.back() not_eq '/' and logger_directory.back() not_eq '\\') {
-                logger_directory.push_back('/');
-            }
-#endif
         }
 
         void set_logger_level(LogLevel level){
@@ -434,7 +401,7 @@ namespace iLogger{
     }
 
     static void remove_color_text(char* buffer){
-
+        
         //"\033[31m%s\033[0m"
         char* p = buffer;
         while(*p){
@@ -482,11 +449,10 @@ namespace iLogger{
         string now = time_now();
         va_list vl;
         va_start(vl, fmt);
-
+        
         char buffer[2048];
         string filename = file_name(file, true);
         int n = snprintf(buffer, sizeof(buffer), "[%s]", now.c_str());
-
 
         if (level == LogLevel::Fatal or level == LogLevel::Error) {
             n += snprintf(buffer + n, sizeof(buffer) - n, "[\033[31m%s\033[0m]", level_string(level));
@@ -504,7 +470,6 @@ namespace iLogger{
             n += snprintf(buffer + n, sizeof(buffer) - n, "[%s]", level_string(level));
         }
 
-
         n += snprintf(buffer + n, sizeof(buffer) - n, "[%s:%d]:", filename.c_str(), line);
         vsnprintf(buffer + n, sizeof(buffer) - n, fmt, vl);
 
@@ -519,6 +484,7 @@ namespace iLogger{
         }
 
         if(!__g_logger.logger_directory.empty()){
+            // remove save color txt
             remove_color_text(buffer);
             __g_logger.write(buffer);
             if (level == LogLevel::Fatal) {
@@ -752,7 +718,7 @@ namespace iLogger{
 
         string result;
         result.resize(str.size());
-
+        
         char* dest = &result[0];
         const char* src = str.c_str();
         const char* value_ptr = value.c_str();
@@ -776,7 +742,7 @@ namespace iLogger{
                     nreplace--;
                 }
             }
-
+            
             size_t copy_length = pos - prev;
             if(copy_length > 0){
                 size_t dest_length = dest - &result[0];
@@ -790,7 +756,7 @@ namespace iLogger{
                 memcpy(dest, src + prev, copy_length);
                 dest += copy_length;
             }
-
+            
             if (keep){
                 pos += token_length;
                 prev = pos;
@@ -871,38 +837,38 @@ namespace iLogger{
     static unsigned char from_b64(unsigned char ch) {
         /* Inverse lookup map */
         static const unsigned char tab[128] = {
-                255, 255, 255, 255,
-                255, 255, 255, 255, /*  0 */
-                255, 255, 255, 255,
-                255, 255, 255, 255, /*  8 */
-                255, 255, 255, 255,
-                255, 255, 255, 255, /*  16 */
-                255, 255, 255, 255,
-                255, 255, 255, 255, /*  24 */
-                255, 255, 255, 255,
-                255, 255, 255, 255, /*  32 */
-                255, 255, 255, 62,
-                255, 255, 255, 63, /*  40 */
-                52,  53,  54,  55,
-                56,  57,  58,  59, /*  48 */
-                60,  61,  255, 255,
-                255, 200, 255, 255, /*  56   '=' is 200, on index 61 */
-                255, 0,   1,   2,
-                3,   4,   5,   6, /*  64 */
-                7,   8,   9,   10,
-                11,  12,  13,  14, /*  72 */
-                15,  16,  17,  18,
-                19,  20,  21,  22, /*  80 */
-                23,  24,  25,  255,
-                255, 255, 255, 255, /*  88 */
-                255, 26,  27,  28,
-                29,  30,  31,  32, /*  96 */
-                33,  34,  35,  36,
-                37,  38,  39,  40, /*  104 */
-                41,  42,  43,  44,
-                45,  46,  47,  48, /*  112 */
-                49,  50,  51,  255,
-                255, 255, 255, 255, /*  120 */
+            255, 255, 255, 255,
+            255, 255, 255, 255, /*  0 */
+            255, 255, 255, 255,
+            255, 255, 255, 255, /*  8 */
+            255, 255, 255, 255,
+            255, 255, 255, 255, /*  16 */
+            255, 255, 255, 255,
+            255, 255, 255, 255, /*  24 */
+            255, 255, 255, 255,
+            255, 255, 255, 255, /*  32 */
+            255, 255, 255, 62,
+            255, 255, 255, 63, /*  40 */
+            52,  53,  54,  55,
+            56,  57,  58,  59, /*  48 */
+            60,  61,  255, 255,
+            255, 200, 255, 255, /*  56   '=' is 200, on index 61 */
+            255, 0,   1,   2,
+            3,   4,   5,   6, /*  64 */
+            7,   8,   9,   10,
+            11,  12,  13,  14, /*  72 */
+            15,  16,  17,  18,
+            19,  20,  21,  22, /*  80 */
+            23,  24,  25,  255,
+            255, 255, 255, 255, /*  88 */
+            255, 26,  27,  28,
+            29,  30,  31,  32, /*  96 */
+            33,  34,  35,  36,
+            37,  38,  39,  40, /*  104 */
+            41,  42,  43,  44,
+            45,  46,  47,  48, /*  112 */
+            49,  50,  51,  255,
+            255, 255, 255, 255, /*  120 */
         };
         return tab[ch & 127];
     }
@@ -929,8 +895,8 @@ namespace iLogger{
         char *dst = const_cast<char*>(out_data.data());
         char *orig_dst = dst;
         while (len >= 4 and (a = from_b64(s[0])) not_eq 255 and
-               (b = from_b64(s[1])) not_eq 255 and (c = from_b64(s[2])) not_eq 255 and
-               (d = from_b64(s[3])) not_eq 255) {
+                (b = from_b64(s[1])) not_eq 255 and (c = from_b64(s[2])) not_eq 255 and
+                (d = from_b64(s[3])) not_eq 255) {
             s += 4;
             len -= 4;
             if (a == 200 or b == 200) break; /* '=' can't be there */
@@ -950,7 +916,7 @@ namespace iLogger{
         encode_result.reserve(size / 3 * 4 + (size % 3 not_eq 0 ? 4 : 0));
 
         const unsigned char * current = static_cast<const unsigned char*>(data);
-        static const char *base64_table = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        static const char *base64_table = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";  
         while(size > 2) {
             encode_result += base64_table[current[0] >> 2];
             encode_result += base64_table[((current[0] & 0x03) << 4) + (current[1] >> 4)];
@@ -976,36 +942,36 @@ namespace iLogger{
     }
 
     bool delete_file(const string& path){
-        return ::remove(path.c_str()) == 0;
+		return ::remove(path.c_str()) == 0;
     }
 
     bool rmtree(const string& directory, bool ignore_fail){
 
         if(directory.empty()) return false;
-        auto files = find_files(directory, "*", false);
-        auto dirs = find_files(directory, "*", true);
+		auto files = find_files(directory, "*", false);
+		auto dirs = find_files(directory, "*", true);
 
-        bool success = true;
-        for (int i = 0; i < files.size(); ++i){
-            if (::remove(files[i].c_str()) != 0){
-                success = false;
+		bool success = true;
+		for (int i = 0; i < files.size(); ++i){
+			if (::remove(files[i].c_str()) != 0){
+				success = false;
 
-                if (!ignore_fail){
-                    return false;
-                }
-            }
-        }
+				if (!ignore_fail){
+					return false;
+				}
+			}
+		}
 
-        dirs.insert(dirs.begin(), directory);
-        for (int i = (int)dirs.size() - 1; i >= 0; --i){
-            if (::rmdir(dirs[i].c_str()) != 0){
-                success = false;
-                if (!ignore_fail)
-                    return false;
-            }
-        }
-        return success;
-    }
+		dirs.insert(dirs.begin(), directory);
+		for (int i = (int)dirs.size() - 1; i >= 0; --i){
+			if (::rmdir(dirs[i].c_str()) != 0){
+				success = false;
+				if (!ignore_fail)
+					return false;
+			}
+		}
+		return success;
+	}
 
     string join_dims(const vector<int64_t>& dims){
         stringstream output;
@@ -1018,4 +984,4 @@ namespace iLogger{
         return output.str();
     }
 
-}
+}; // namespace Logger
