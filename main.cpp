@@ -34,7 +34,6 @@ int main(){
     cv::Mat image = cv::imread("rq.jpg");
     auto yolov5 = Yolo::create_infer("yolov5s.trt", Yolo::Type::V5);
     auto boxes = yolov5->commit(image).get();
-    INFO("5555555555555555555555");
     for(auto& box : boxes){
         cv::Scalar color(0, 255, 0);
         cv::rectangle(image, cv::Point(box.left, box.top), cv::Point(box.right, box.bottom), color, 3);
@@ -46,7 +45,6 @@ int main(){
         cv::putText(image, caption, cv::Point(box.left, box.top-5), 0, 1, cv::Scalar::all(0), 2, 16);
     }
     cv::imwrite("image-draw2.jpg", image);
-    INFO("999999999999999999");
     return 0;
 }
 

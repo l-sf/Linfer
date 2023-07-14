@@ -36,7 +36,6 @@ public:
    void stop(){
        running_ = false;
        cv_.notify_all();
-       INFO("88888888888888888");
        {
            std::unique_lock<std::mutex> l(jobs_lock_);
            while (!jobs_.empty()){
@@ -44,7 +43,6 @@ public:
                if(item.pro)
                    item.pro->set_value(Output{});
                jobs_.pop();
-               INFO("1313131313131313");
            }
        }
 
@@ -75,7 +73,6 @@ public:
            jobs_.push(job);
        }
        cv_.notify_one();
-       INFO("777777777777777");
        return job.pro->get_future();
    }
 
@@ -126,14 +123,11 @@ protected:
 
    virtual bool get_jobs_and_wait(std::vector<Job>& fetch_jobs, int max_batch_size){
        std::unique_lock<std::mutex> l(jobs_lock_);
-       INFO("11111111111111111");
        cv_.wait(l, [&](){ return !running_ || !jobs_.empty(); });
-       INFO("121212121212121");
        if(!running_) return false;
 
        fetch_jobs.clear();
        for(int i = 0; i < max_batch_size && !jobs_.empty(); ++i){
-           INFO("222222222222222222");
            fetch_jobs.emplace_back(std::move(jobs_.front()));
            jobs_.pop();
        }

@@ -71,11 +71,9 @@ public:
     virtual ~MonopolyAllocator(){
         run_ = false;
         cv_.notify_all();
-        INFO("161616161616");
+
         std::unique_lock<std::mutex> l(lock_);
-        INFO("171717  %d   ", num_wait_thread_);
         cv_exit_.wait(l, [&](){ return num_wait_thread_ == 0; });
-        INFO("181818181");
     }
 
     ///  query() 申请一个可用的对象

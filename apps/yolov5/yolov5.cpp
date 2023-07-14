@@ -164,7 +164,6 @@ namespace Yolo{
                     affine_matrix_device.copy_from_gpu(affine_matrix_device.offset(ibatch), mono_tensor->get_workspace()->gpu(), 6);
                     input->copy_from_gpu(input->offset(ibatch), mono_tensor->gpu(), mono_tensor->numel());
                     job.mono_tensor->release();
-                    INFO("333333333333333333");
                 }
 
                 // 进行推理，一次推理一批
@@ -181,7 +180,6 @@ namespace Yolo{
                                           affine_matrix, output_array_ptr, MAX_IMAGE_BOX, stream_);
                     if(nms_method_ == NMSMethod::FastGPU)
                         nms_kernel_invoker(output_array_ptr, nms_threshold_, MAX_IMAGE_BOX, stream_);
-                    INFO("4444444444444444444");
                 }
 
                 output_array_device.to_cpu();
@@ -205,9 +203,9 @@ namespace Yolo{
                 }
                 fetched_jobs.clear();
             }
-            INFO("14141414141414");
+
             stream_ = nullptr;
-            INFO("1515151515115");
+
             tensor_allocator_.reset();
             INFO("Infer worker done.");
         }
@@ -277,7 +275,6 @@ namespace Yolo{
                     tensor->gpu<float>(), input_width_, input_height_,
                     affine_matrix_device, 114,
                     normalize_, preprocess_stream);
-            INFO("666666666666666");
             return true;
         }
 
