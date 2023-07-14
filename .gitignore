@@ -1,0 +1,11 @@
+**/cmake-build-debug/**
+**/cmake-build-release/**
+**/.idea/**
+
+**/pro
+**/*.so
+**/*.pt
+**/*.pth
+**/*.onnx
+**/*.engine
+**/*.trt
