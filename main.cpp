@@ -1,17 +1,12 @@
 
 
-#include <cuda_runtime.h>
-#include <NvInferRuntime.h>
-#include <iostream>
+
 #include <fstream>
 #include <string>
-#include <cstdio>
-#include <cstring>
-#include <cmath>
 #include <unistd.h>
 #include <opencv2/opencv.hpp>
-#include "app_yolov5/yolov5.hpp"
-#include "tensorrt/ilogger.hpp"
+#include "apps/yolov5/yolov5.hpp"
+#include "trt_common/ilogger.hpp"
 
 using namespace std;
 

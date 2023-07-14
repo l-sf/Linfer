@@ -6,11 +6,11 @@
 #include <vector>
 #include <string>
 #include <functional>
-#include "tensorrt/cuda-tools.hpp"
-#include "tensorrt/ilogger.hpp"
-#include "tensorrt/trt-infer.hpp"
-#include "tensorrt/producer_consumer.hpp"
-#include "tensorrt/preprocess_kernel.cuh"
+#include "trt_common/cuda-tools.hpp"
+#include "trt_common/ilogger.hpp"
+#include "trt_common/trt-infer.hpp"
+#include "trt_common/producer_consumer.hpp"
+#include "trt_common/preprocess_kernel.cuh"
 
 
 using namespace std;
@@ -111,7 +111,7 @@ namespace Yolo{
             max_objects_ = max_objects;
             use_multi_preprocess_stream_ = use_multi_preprocess_stream;
 
-            return ControllerImpl::startup(make_tuple(file, gpuid));
+            return ControllerImpl::start_up(make_tuple(file, gpuid));
         }
 
         void worker(promise<bool>& pro) override{

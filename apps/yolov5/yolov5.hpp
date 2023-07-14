@@ -8,7 +8,7 @@
 #include <vector>
 #include <memory>
 #include <opencv2/opencv.hpp>
-#include "tensorrt/trt-tensor.hpp"
+#include "trt_common/trt-tensor.hpp"
 
 
 /// -------------------------- 封装接口类 ---------------------------
