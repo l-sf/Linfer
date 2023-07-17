@@ -14,16 +14,18 @@ namespace Yolo{
 
     const char* type_name(Type type){
         switch(type){
-        case Type::V5: return "YoloV5";
-        case Type::X: return "YoloX";
-        default: return "Unknow";
+            case Type::V5: return "YoloV5";
+            case Type::X: return "YoloX";
+            case Type::V7: return "YoloV7";
+            case Type::V8: return "YoloV8";
+            default: return "Unknow";
         }
     }
 
     void decode_kernel_invoker(
         float* predict, int num_bboxes, int num_classes, float confidence_threshold, 
         float* invert_affine_matrix, float* parray,
-        int max_objects, cudaStream_t stream
+        int max_objects, Type type, cudaStream_t stream
     );
 
     void nms_kernel_invoker(
@@ -85,13 +87,8 @@ namespace Yolo{
         return box_result;
     }
 
-    using ControllerImpl = InferController
-    <
-        cv::Mat,                    // input
-        BoxArray,               // output
-        tuple<string, int>,     // start param
-        AffineMatrix            // additional
-    >;
+    using ControllerImpl = InferController<cv::Mat, BoxArray, tuple<string, int>, AffineMatrix>;
+
     class InferImpl : public Infer, public ControllerImpl{
     public:
 
@@ -106,17 +103,16 @@ namespace Yolo{
             NMSMethod nms_method, int max_objects,
             bool use_multi_preprocess_stream
         ){
-            if(type == Type::V5){
-                normalize_ = CUDAKernel::Norm::alpha_beta(1 / 255.0f, 0.0f, CUDAKernel::ChannelType::Invert);
-            }else if(type == Type::X){
-                //float mean[] = {0.485, 0.456, 0.406};
-                //float std[]  = {0.229, 0.224, 0.225};
-                //normalize_ = CUDAKernel::Norm::mean_std(mean, std, 1/255.0f, CUDAKernel::ChannelType::Invert);
+            if(type == Type::V5 || type == Type::V7 || type == Type::V8){
+                normalize_ = CUDAKernel::Norm::alpha_beta(1 / 255.f, 0.f, CUDAKernel::ChannelType::Invert);
+            }
+            else if(type == Type::X){
                 normalize_ = CUDAKernel::Norm::None();
-            }else{
+            }
+            else{
                 INFOE("Unsupported type %d", type);
             }
-            
+            type_ = type;
             confidence_threshold_ = confidence_threshold;
             nms_threshold_        = nms_threshold;
             nms_method_           = nms_method;
@@ -145,7 +141,11 @@ namespace Yolo{
             int max_batch_size = model->get_max_batch_size();
             auto input = model->input();
             auto output = model->output();
-            int num_classes    = output->size(2) - 5;
+            int num_classes;
+            if(type_ == Type::V8)
+                num_classes = output->size(2) - 4;
+            else
+                num_classes = output->size(2) - 5;
             input_width_       = input->size(3);
             input_height_      = input->size(2);
             tensor_allocator_  = make_shared<MonopolyAllocator<TRT::Tensor>>(max_batch_size * 2);
@@ -197,7 +197,8 @@ namespace Yolo{
                     float* output_array_ptr   = output_array_device.gpu<float>(ibatch);
                     auto affine_matrix = affine_matrix_device.gpu<float>(ibatch);
                     checkCudaRuntime(cudaMemsetAsync(output_array_ptr, 0, sizeof(int), stream_));
-                    decode_kernel_invoker(predict_batch, output->size(1), num_classes, confidence_threshold_, affine_matrix, output_array_ptr, MAX_IMAGE_BBOX, stream_);
+                    decode_kernel_invoker(predict_batch, output->size(1), num_classes, confidence_threshold_,
+                                          affine_matrix, output_array_ptr, MAX_IMAGE_BBOX, type_, stream_);
 
                     if(nms_method_ == NMSMethod::FastGPU){
                         nms_kernel_invoker(output_array_ptr, nms_threshold_, MAX_IMAGE_BBOX, stream_);
@@ -318,6 +319,7 @@ namespace Yolo{
         TRT::CUStream stream_       = nullptr;
         bool use_multi_preprocess_stream_ = false;
         CUDAKernel::Norm normalize_;
+        Type type_;
     };
 
     shared_ptr<Infer> create_infer(
@@ -326,7 +328,7 @@ namespace Yolo{
         NMSMethod nms_method, int max_objects,
         bool use_multi_preprocess_stream
     ){
-        shared_ptr<InferImpl> instance(new InferImpl());
+        shared_ptr<InferImpl> instance(new InferImpl{});
         if(!instance->startup(engine_file, type, gpuid, confidence_threshold,
                               nms_threshold, nms_method, max_objects, use_multi_preprocess_stream)){
             instance.reset();

@@ -392,9 +392,9 @@ namespace TRT {
     }
 
     shared_ptr<Infer> load_infer(const string& file){
-        shared_ptr<InferImpl> infer{new InferImpl{}};
-        if(!infer->load(file)) infer.reset();
-        return infer;
+        shared_ptr<InferImpl> instance{new InferImpl{}};
+        if(!instance->load(file)) instance.reset();
+        return instance;
     }
 
     DeviceMemorySummary get_device_summary() {

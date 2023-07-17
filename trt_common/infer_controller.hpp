@@ -12,7 +12,6 @@
 #include <thread>
 #include <queue>
 #include <condition_variable>
-#include "trt_infer.hpp"
 #include "monopoly_allocator.hpp"
 
 template<class Input, class Output, class StartParam=std::tuple<std::string, int>, class JobAdditional=int>

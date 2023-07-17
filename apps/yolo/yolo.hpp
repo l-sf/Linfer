@@ -10,6 +10,7 @@
 
 
 /// -------------------------- 封装接口类 ---------------------------
+/// -------------------- 支持 YoloV5/X/V7/V8 -----------------------
 
 namespace Yolo{
 
@@ -30,7 +31,8 @@ namespace Yolo{
     enum class Type : int{
         V5 = 0,
         X  = 1,
-        V3 = V5
+        V7 = 2,
+        V8 = 3
     };
 
     enum class NMSMethod : int{
@@ -38,6 +40,7 @@ namespace Yolo{
         FastGPU = 1      // Fast NMS with a small loss of accuracy in corner cases
     };
 
+    const char* type_name(Type type);
     void image_to_tensor(const cv::Mat& image, shared_ptr<TRT::Tensor>& tensor, Type type, int ibatch);
 
     class Infer{
@@ -53,8 +56,6 @@ namespace Yolo{
         bool use_multi_preprocess_stream = false
     );
 
-    const char* type_name(Type type);
-
-}; // namespace Yolo
+} // namespace Yolo
 
 #endif // YOLO_HPP
