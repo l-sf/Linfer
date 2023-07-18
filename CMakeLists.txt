@@ -23,6 +23,7 @@ include_directories(
         ${OpenCV_INCLUDE_DIRS}
         ${CUDA_DIR}/include
         ${TENSORRT_DIR}/include
+        "/usr/include/eigen3"
 )
 link_directories(
         ${CUDA_DIR}/lib64

@@ -11,13 +11,16 @@ namespace Yolo{
         *oy = matrix[3] * x + matrix[4] * y + matrix[5];
     }
 
-    static __global__ void decode_kernel_v8(float* predict, int num_bboxes, int num_classes, float confidence_threshold, float* invert_affine_matrix, float* parray, int max_objects){
+    /// ------------------ 核函数定义 ------------------
+
+    static __global__ void decode_kernel_v8(float* predict, int num_bboxes, int num_classes, float confidence_threshold,
+                                            float* invert_affine_matrix, float* parray, int max_objects){
 
         int position = blockDim.x * blockIdx.x + threadIdx.x;
         if (position >= num_bboxes) return;
 
-        float* pitem     = predict + (4 + num_classes) * position;
-        float* class_confidence = pitem + 5;
+        float* pitem = predict + (4 + num_classes) * position;
+        float* class_confidence = pitem + 4;
         float confidence = *class_confidence++;
         int label = 0;
         for(int i = 1; i < num_classes; ++i, ++class_confidence){
@@ -55,12 +58,13 @@ namespace Yolo{
         *pout_item++ = 1; // 1 = keep, 0 = ignore
     }
 
-    static __global__ void decode_kernel_common(float* predict, int num_bboxes, int num_classes, float confidence_threshold, float* invert_affine_matrix, float* parray, int max_objects){
+    static __global__ void decode_kernel_common(float* predict, int num_bboxes, int num_classes, float confidence_threshold,
+                                                float* invert_affine_matrix, float* parray, int max_objects){
 
         int position = blockDim.x * blockIdx.x + threadIdx.x;
 		if (position >= num_bboxes) return;
 
-        float* pitem     = predict + (5 + num_classes) * position;
+        float* pitem = predict + (5 + num_classes) * position;
         float objectness = pitem[4];
         if(objectness < confidence_threshold)
             return;
@@ -151,7 +155,10 @@ namespace Yolo{
                 }
             }
         }
-    } 
+    }
+
+
+    /// ------------------ 核函数调用 ------------------
 
     void decode_kernel_invoker(float* predict, int num_bboxes, int num_classes, float confidence_threshold, float* invert_affine_matrix,
                                float* parray, int max_objects, Type type, cudaStream_t stream){
