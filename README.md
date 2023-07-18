@@ -12,12 +12,20 @@
 
 ## Highlights
 
-- 支持目标检测算法 Yolo 系列 5/X/7/8 ，多目标跟踪算法 Bytetrack、Deepsort；
+- 支持目标检测算法 Yolo 系列 5/X/7/8 ，多目标跟踪算法 Bytetrack；
 - 预处理和后处理实现CUDA核函数，在 jetson 边缘端也能高性能推理；
 - 封装Tensor、Infer，实现内存复用、CPU/GPU 内存之间自动拷贝、引擎上下文管理等，方便使用；
 - 推理过程实现生产者消费者模型，实现预处理和推理的并行化，进一步提升性能；
 - 采用 RAII 思想+接口模式封装应用，使用安全、便捷。
-- 后续即将单目标跟踪算法 STARK、OSTrack。
+
+
+
+## TODO
+
+- [ ]  STARK-lightning
+- [ ]  OSTrack
+- [ ]  yolov6
+- [ ]  yolov8 ptq & qat
 
 
 
