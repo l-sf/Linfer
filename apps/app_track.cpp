@@ -68,6 +68,7 @@ void inference_bytetrack(const string& engine_file, int gpuid, Yolo::Type type, 
     int height = cap.get(cv::CAP_PROP_FRAME_HEIGHT);
     BYTETracker tracker;
     cv::Mat image;
+    cv::Mat prev_image;
     tracker.config().set_initiate_state({0.1,  0.1,  0.1,  0.1,
                                                 0.2,  0.2,  1,    0.2}
                                         ).set_per_frame_motion({0.1,  0.1,  0.1,  0.1,
@@ -77,28 +78,36 @@ void inference_bytetrack(const string& engine_file, int gpuid, Yolo::Type type, 
     cv::VideoWriter writer("videos/output.mp4", cv::VideoWriter::fourcc('M', 'P', 'E', 'G'), fps, cv::Size(width, height));
     auto cond = [](const Yolo::Box& b){return b.label == 0;};
 
+    shared_future<vector<Yolo::Box>> prev_fut;
     int t = 0;
     while(cap.read(image)){
-
-        auto boxes = engine->commit(image).get();
         t++;
+        /// 高性能的关键：
+        /// 先缓存一帧图像，使得读图预处理和推理后处理的时序图有重叠
+        if(prev_fut.valid()){
+            const auto& boxes = prev_fut.get();
+            auto tracks = tracker.update(det2tracks(boxes, cond));
+            for(auto& track : tracks){
 
-        auto tracks = tracker.update(det2tracks(boxes, cond));
-        for(auto& track : tracks){
-
-            vector<float> tlwh = track.tlwh;
-            bool vertical = tlwh[2] / tlwh[3] > 1.6;
-            if (tlwh[2] * tlwh[3] > 20 && !vertical)
-            {
-                auto s = tracker.get_color(track.track_id);
-                putText(image, cv::format("%d", track.track_id), cv::Point(tlwh[0], tlwh[1] - 10),
-                        0, 2, cv::Scalar(0, 0, 255), 3, cv::LINE_AA);
-                rectangle(image, cv::Rect(tlwh[0], tlwh[1], tlwh[2], tlwh[3]),
-                          cv::Scalar(get<0>(s), get<1>(s), get<2>(s)), 3);
+                vector<float> tlwh = track.tlwh;
+                // 通过宽高比和面积过滤掉
+                bool vertical = tlwh[2] / tlwh[3] > 1.6;
+                if (tlwh[2] * tlwh[3] > 20 && !vertical)
+                {
+                    auto s = tracker.get_color(track.track_id);
+                    putText(prev_image, cv::format("%d", track.track_id), cv::Point(tlwh[0], tlwh[1] - 10),
+                            0, 2, cv::Scalar(0, 0, 255), 3, cv::LINE_AA);
+                    rectangle(prev_image, cv::Rect(tlwh[0], tlwh[1], tlwh[2], tlwh[3]),
+                              cv::Scalar(get<0>(s), get<1>(s), get<2>(s)), 3);
+                }
             }
+            writer.write(prev_image);
+            printf("process.\n");
         }
-        writer.write(image);
-        printf("process.\n");
+
+        image.copyTo(prev_image);
+        prev_fut = engine->commit(image);
+
     }
 
     writer.release();
