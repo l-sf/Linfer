@@ -1,8 +1,10 @@
 **/cmake-build-debug/**
 **/cmake-build-release/**
 **/.idea/**
+**/.vscode/**
 **/build/**
 **/infer_res/**
+**/output.mp4
 **/pro
 **/*.so
 **/*.pt
@@ -10,3 +12,4 @@
 **/*.onnx
 **/*.engine
 **/*.trt
+**/*.trtmodel
