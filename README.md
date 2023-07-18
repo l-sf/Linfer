@@ -323,16 +323,6 @@ auto boxes = infer->commit(image).get();
 
 
 
-## Compile Engine
-
-```bash
-cd workspace
-# 修改其中的onnx路径
-bash compile_engine.sh
-```
-
-
-
 ## Reference
 
 - [tensorRT_Pro](https://github.com/shouxieai/tensorRT_Pro.git) 
