@@ -77,16 +77,16 @@ auto boxes = infer->commit(image).get();
 
 ## Speed Test
 
-在 Jetson Orin Nano 8G 上进行测试，batch size = 4，测试包括整个流程（即预处理+推理+后处理）
+在 Jetson Orin Nano 8G 上进行测试，测试包括整个流程（即预处理+推理+后处理）
 
-|  Model   | Precision | Resolution | Batch Size |  FPS   |
-| :------: | :-------: | :--------: | :--------: | :----: |
-| yolov5_s |   fp16    |  640x640   |     4      | 100.91 |
-| yolov5_s |   int8    |  640x640   |     4      | 83.72  |
-| yolox_s  |   fp16    |  640x640   |     4      | 85.00  |
-|  yolov7  |   int8    |  640x640   |     4      | 50.42  |
-| yolov8_n |   fp16    |  640x640   |     4      | 130.16 |
-| yolov8_s |   fp16    |  640x640   |     4      | 84.74  |
+|  Model   | Precision | Resolution | FPS(bs=1) | FPS(bs=4) |
+| :------: | :-------: | :--------: | :-------: | :-------: |
+| yolov5_s |   fp16    |  640x640   |   96.06   |  100.91   |
+| yolov5_s |   int8    |  640x640   |   69.22   |   83.72   |
+| yolox_s  |   fp16    |  640x640   |   79.64   |   85.00   |
+|  yolov7  |   int8    |  640x640   |   49.55   |   50.42   |
+| yolov8_n |   fp16    |  640x640   |  121.94   |  130.16   |
+| yolov8_s |   fp16    |  640x640   |   81.40   |   84.74   |
 
 
 
