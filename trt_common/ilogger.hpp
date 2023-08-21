@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 #include <tuple>
-#include <time.h>
+#include <ctime>
 
 
 namespace iLogger{
@@ -32,34 +32,17 @@ namespace iLogger{
     string time_now();
     string gmtime_now();
 	string gmtime(time_t t);
-	time_t gmtime2ctime(const string& gmt);
-    void sleep(int ms);
 
     bool isfile(const string& file);
     bool mkdir(const string& path);
     bool mkdirs(const string& path);
-    bool delete_file(const string& path);
-    bool rmtree(const string& directory, bool ignore_fail=false);
     bool exists(const string& path);
     string format(const char* fmt, ...);
     FILE* fopen_mkdirs(const string& path, const string& mode);
     string file_name(const string& path, bool include_suffix=true);
-    string directory(const string& path);
     long long timestamp_now();
-    double timestamp_now_float();
-    time_t last_modify(const string& file);
-    vector<uint8_t> load_file(const string& file);
-    string load_text_file(const string& file);
-    size_t file_size(const string& file);
 
-    bool begin_with(const string& str, const string& with);
-	bool end_with(const string& str, const string& with);
-    vector<string> split_string(const string& str, const std::string& spstr);
-    string replace_string(const string& str, const string& token, const string& value, int nreplace=-1, int* out_num_replace=nullptr);
-
-    // h[0-1], s[0-1], v[0-1]
     // return, 0-255, 0-255, 0-255
-    tuple<uint8_t, uint8_t, uint8_t> hsv2rgb(float h, float s, float v);
     tuple<uint8_t, uint8_t, uint8_t> random_color(int id);
 
     //   abcdefg.pnga          *.png      > false
@@ -75,23 +58,13 @@ namespace iLogger{
     bool save_file(const string& file, const string& data, bool mk_dirs = true);
 	bool save_file(const string& file, const void* data, size_t length, bool mk_dirs = true);
 
-    // 捕获：SIGINT(2)、SIGQUIT(3)
-    int while_loop();
 
     // 关于logger的api
     const char* level_string(LogLevel level);
-    void set_logger_save_directory(const string& loggerDirectory);
-
-    void set_log_level(LogLevel level);
-    LogLevel get_log_level();
     void __log_func(const char* file, int line, LogLevel level, const char* fmt, ...);
     void destroy_logger();
 
-    string base64_decode(const string& base64);
-    string base64_encode(const void* data, size_t size);
-
     inline int upbound(int n, int align = 32){return (n + align - 1) / align * align;}
-    string join_dims(const vector<int64_t>& dims);
 };
 
 

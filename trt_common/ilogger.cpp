@@ -1,9 +1,9 @@
 
 #include "ilogger.hpp"
-#include <stdarg.h>
-#include <string.h>
-#include <time.h>
-#include <math.h>
+#include <cstdarg>
+#include <cstring>
+#include <ctime>
+#include <cmath>
 #include <string>
 #include <mutex>
 #include <memory>
@@ -83,20 +83,15 @@ namespace iLogger{
     }
 
     size_t file_size(const string& file){
-
-        struct stat st;
+        struct stat st{};
         stat(file.c_str(), &st);
         return st.st_size;
     }
 
     time_t last_modify(const string& file){
-        struct stat st;
+        struct stat st{};
         stat(file.c_str(), &st);
         return st.st_mtim.tv_sec;
-    }
-
-    void sleep(int ms) {
-        this_thread::sleep_for(std::chrono::milliseconds(ms));
     }
 
     int get_month_by_name(char* month){
@@ -124,18 +119,6 @@ namespace iLogger{
         if(strcmp(wday,"Fri") == 0)return 5;
         if(strcmp(wday,"Sat") == 0)return 6;
         return -1;
-    }
-
-    time_t gmtime2ctime(const string& gmt){
-
-        char week[4] = {0};
-        char month[4] = {0};
-        tm date;
-        sscanf(gmt.c_str(),"%3s, %2d %3s %4d %2d:%2d:%2d GMT",week,&date.tm_mday,month,&date.tm_year,&date.tm_hour,&date.tm_min,&date.tm_sec);
-        date.tm_mon = get_month_by_name(month);
-        date.tm_wday = get_week_day_by_name(week);
-        date.tm_year = date.tm_year - 1900;
-        return mktime(&date);
     }
 
     string gmtime(time_t t){
@@ -249,39 +232,8 @@ namespace iLogger{
         return path.substr(p, u - p);
     }
 
-    string directory(const string& path){
-        if (path.empty())
-            return ".";
-
-        int p = path.rfind('/');
-
-        if(p == -1)
-            return ".";
-
-        return path.substr(0, p + 1);
-    }
-
-    bool begin_with(const string& str, const string& with){
-
-        if (str.length() < with.length())
-            return false;
-        return strncmp(str.c_str(), with.c_str(), with.length()) == 0;
-    }
-
-    bool end_with(const string& str, const string& with){
-
-        if (str.length() < with.length())
-            return false;
-
-        return strncmp(str.c_str() + str.length() - with.length(), with.c_str(), with.length()) == 0;
-    }
-
     long long timestamp_now() {
         return chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count();
-    }
-
-    double timestamp_now_float() {
-        return chrono::duration_cast<chrono::microseconds>(chrono::system_clock::now().time_since_epoch()).count() / 1000.0;
     }
 
     static struct Logger{
@@ -429,17 +381,6 @@ namespace iLogger{
         }
     }
 
-    void set_logger_save_directory(const string& loggerDirectory){
-        __g_logger.set_save_directory(loggerDirectory);
-    }
-
-    void set_log_level(LogLevel level){
-        __g_logger.set_logger_level(level);
-    }
-
-    LogLevel get_log_level(){
-        return __g_logger.logger_level;
-    }
 
     void __log_func(const char* file, int line, LogLevel level, const char* fmt, ...) {
 
@@ -498,44 +439,6 @@ namespace iLogger{
         }
     }
 
-    string load_text_file(const string& file){
-        ifstream in(file, ios::in | ios::binary);
-        if (!in.is_open())
-            return {};
-
-        in.seekg(0, ios::end);
-        size_t length = in.tellg();
-
-        string data;
-        if (length > 0){
-            in.seekg(0, ios::beg);
-            data.resize(length);
-
-            in.read((char*)&data[0], length);
-        }
-        in.close();
-        return data;
-    }
-
-    std::vector<uint8_t> load_file(const string& file){
-
-        ifstream in(file, ios::in | ios::binary);
-        if (!in.is_open())
-            return {};
-
-        in.seekg(0, ios::end);
-        size_t length = in.tellg();
-
-        std::vector<uint8_t> data;
-        if (length > 0){
-            in.seekg(0, ios::beg);
-            data.resize(length);
-
-            in.read((char*)&data[0], length);
-        }
-        in.close();
-        return data;
-    }
 
     bool alphabet_equal(char a, char b, bool ignore_case){
         if (ignore_case){
@@ -676,112 +579,6 @@ namespace iLogger{
         return output;
     }
 
-    vector<string> split_string(const string& str, const std::string& spstr){
-
-        vector<string> res;
-        if (str.empty()) return res;
-        if (spstr.empty()) return{ str };
-
-        auto p = str.find(spstr);
-        if (p == string::npos) return{ str };
-
-        res.reserve(5);
-        string::size_type prev = 0;
-        int lent = spstr.length();
-        const char* ptr = str.c_str();
-
-        while (p not_eq string::npos){
-            int len = p - prev;
-            if (len > 0){
-                res.emplace_back(str.substr(prev, len));
-            }
-            prev = p + lent;
-            p = str.find(spstr, prev);
-        }
-
-        int len = str.length() - prev;
-        if (len > 0){
-            res.emplace_back(str.substr(prev, len));
-        }
-        return res;
-    }
-
-    string replace_string(const string& str, const string& token, const string& value, int nreplace, int* out_num_replace){
-
-        if(nreplace == -1){
-            nreplace = str.size();
-        }
-
-        if(nreplace == 0){
-            return str;
-        }
-
-        string result;
-        result.resize(str.size());
-        
-        char* dest = &result[0];
-        const char* src = str.c_str();
-        const char* value_ptr = value.c_str();
-        int old_nreplace = nreplace;
-        bool keep = true;
-        string::size_type pos = 0;
-        string::size_type prev = 0;
-        size_t token_length = token.length();
-        size_t value_length = value.length();
-
-        do{
-            pos = str.find(token, pos);
-            if (pos == string::npos){
-                keep = false;
-                pos = str.length();
-            }else{
-                if(nreplace == 0){
-                    pos = str.length();
-                    keep = false;
-                }else{
-                    nreplace--;
-                }
-            }
-            
-            size_t copy_length = pos - prev;
-            if(copy_length > 0){
-                size_t dest_length = dest - &result[0];
-
-                // Extended memory space if needed.
-                if(dest_length + copy_length > result.size()){
-                    result.resize((result.size() + copy_length) * 1.2);
-                    dest = &result[dest_length];
-                }
-
-                memcpy(dest, src + prev, copy_length);
-                dest += copy_length;
-            }
-            
-            if (keep){
-                pos += token_length;
-                prev = pos;
-
-                size_t dest_length = dest - &result[0];
-
-                // Extended memory space if needed.
-                if(dest_length + value_length > result.size()){
-                    result.resize((result.size() + value_length) * 1.2);
-                    dest = &result[dest_length];
-                }
-                memcpy(dest, value_ptr, value_length);
-                dest += value_length;
-            }
-        } while (keep);
-
-        if(out_num_replace){
-            *out_num_replace = old_nreplace - nreplace;
-        }
-
-        // Crop extra space
-        size_t valid_size = dest - &result[0];
-        result.resize(valid_size);
-        return result;
-    }
 
     bool save_file(const string& file, const void* data, size_t length, bool mk_dirs){
 
@@ -823,165 +620,6 @@ namespace iLogger{
         g_signum = signum;
     }
 
-    int while_loop(){
-        signal(SIGINT, signal_callback_handler);
-        //signal(SIGQUIT, signal_callback_handler);
-        while(!g_has_exit_signal){
-            this_thread::yield();
-        }
-        INFO("Loop over.");
-        return g_signum;
-    }
 
-
-    static unsigned char from_b64(unsigned char ch) {
-        /* Inverse lookup map */
-        static const unsigned char tab[128] = {
-            255, 255, 255, 255,
-            255, 255, 255, 255, /*  0 */
-            255, 255, 255, 255,
-            255, 255, 255, 255, /*  8 */
-            255, 255, 255, 255,
-            255, 255, 255, 255, /*  16 */
-            255, 255, 255, 255,
-            255, 255, 255, 255, /*  24 */
-            255, 255, 255, 255,
-            255, 255, 255, 255, /*  32 */
-            255, 255, 255, 62,
-            255, 255, 255, 63, /*  40 */
-            52,  53,  54,  55,
-            56,  57,  58,  59, /*  48 */
-            60,  61,  255, 255,
-            255, 200, 255, 255, /*  56   '=' is 200, on index 61 */
-            255, 0,   1,   2,
-            3,   4,   5,   6, /*  64 */
-            7,   8,   9,   10,
-            11,  12,  13,  14, /*  72 */
-            15,  16,  17,  18,
-            19,  20,  21,  22, /*  80 */
-            23,  24,  25,  255,
-            255, 255, 255, 255, /*  88 */
-            255, 26,  27,  28,
-            29,  30,  31,  32, /*  96 */
-            33,  34,  35,  36,
-            37,  38,  39,  40, /*  104 */
-            41,  42,  43,  44,
-            45,  46,  47,  48, /*  112 */
-            49,  50,  51,  255,
-            255, 255, 255, 255, /*  120 */
-        };
-        return tab[ch & 127];
-    }
-
-    string base64_decode(const string& base64) {
-
-        if(base64.empty())
-            return "";
-
-        int len = base64.size();
-        auto s = (const unsigned char*)base64.data();
-        unsigned char a, b, c, d;
-        int orig_len = len;
-        int dec_len = 0;
-        string out_data;
-
-        auto end_s = s + base64.size();
-        int count_eq = 0;
-        while(*--end_s == '='){
-            count_eq ++;
-        }
-        out_data.resize(len / 4 * 3 - count_eq);
-
-        char *dst = const_cast<char*>(out_data.data());
-        char *orig_dst = dst;
-        while (len >= 4 and (a = from_b64(s[0])) not_eq 255 and
-                (b = from_b64(s[1])) not_eq 255 and (c = from_b64(s[2])) not_eq 255 and
-                (d = from_b64(s[3])) not_eq 255) {
-            s += 4;
-            len -= 4;
-            if (a == 200 or b == 200) break; /* '=' can't be there */
-            *dst++ = a << 2 | b >> 4;
-            if (c == 200) break;
-            *dst++ = b << 4 | c >> 2;
-            if (d == 200) break;
-            *dst++ = c << 6 | d;
-        }
-        dec_len = (dst - orig_dst);
-        return out_data;
-    }
-
-    string base64_encode(const void* data, size_t size) {
-
-        string encode_result;
-        encode_result.reserve(size / 3 * 4 + (size % 3 not_eq 0 ? 4 : 0));
-
-        const unsigned char * current = static_cast<const unsigned char*>(data);
-        static const char *base64_table = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";  
-        while(size > 2) {
-            encode_result += base64_table[current[0] >> 2];
-            encode_result += base64_table[((current[0] & 0x03) << 4) + (current[1] >> 4)];
-            encode_result += base64_table[((current[1] & 0x0f) << 2) + (current[2] >> 6)];
-            encode_result += base64_table[current[2] & 0x3f];
-
-            current += 3;
-            size -= 3;
-        }
-
-        if(size > 0){
-            encode_result += base64_table[current[0] >> 2];
-            if(size%3 == 1) {
-                encode_result += base64_table[(current[0] & 0x03) << 4];
-                encode_result += "==";
-            } else if(size%3 == 2) {
-                encode_result += base64_table[((current[0] & 0x03) << 4) + (current[1] >> 4)];
-                encode_result += base64_table[(current[1] & 0x0f) << 2];
-                encode_result += "=";
-            }
-        }
-        return encode_result;
-    }
-
-    bool delete_file(const string& path){
-		return ::remove(path.c_str()) == 0;
-    }
-
-    bool rmtree(const string& directory, bool ignore_fail){
-
-        if(directory.empty()) return false;
-		auto files = find_files(directory, "*", false);
-		auto dirs = find_files(directory, "*", true);
-
-		bool success = true;
-		for (int i = 0; i < files.size(); ++i){
-			if (::remove(files[i].c_str()) != 0){
-				success = false;
-
-				if (!ignore_fail){
-					return false;
-				}
-			}
-		}
-
-		dirs.insert(dirs.begin(), directory);
-		for (int i = (int)dirs.size() - 1; i >= 0; --i){
-			if (::rmdir(dirs[i].c_str()) != 0){
-				success = false;
-				if (!ignore_fail)
-					return false;
-			}
-		}
-		return success;
-	}
-
-    string join_dims(const vector<int64_t>& dims){
-        stringstream output;
-        char buf[64];
-        const char* fmts[] = {"%d", " x %d"};
-        for(int i = 0; i < dims.size(); ++i){
-            snprintf(buf, sizeof(buf), fmts[i != 0], dims[i]);
-            output << buf;
-        }
-        return output.str();
-    }
 
 }; // namespace Logger

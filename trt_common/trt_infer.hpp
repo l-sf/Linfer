@@ -39,12 +39,6 @@ namespace TRT {
         virtual std::shared_ptr<MixMemory> get_workspace() = 0;
 	};
 
-	struct DeviceMemorySummary {
-		size_t total;
-		size_t available;
-	};
-
-	DeviceMemorySummary get_current_device_summary();
 	int get_device_count();
 	int get_device();
 	void set_device(int device_id);

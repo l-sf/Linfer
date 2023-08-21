@@ -42,6 +42,6 @@ void test_track(){
 
 int main(){
     test_yolo();
-    test_track();
+//    test_track();
     return 0;
 }
