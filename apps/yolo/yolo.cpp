@@ -5,7 +5,7 @@
 #include "trt_common/ilogger.hpp"
 #include "trt_common/infer_controller.hpp"
 #include "trt_common/preprocess_kernel.cuh"
-#include "trt_common/monopoly_allocator.hpp"
+#include "trt_common/tensor_allocator.hpp"
 #include "trt_common/cuda_tools.hpp"
 
 namespace Yolo{
@@ -137,34 +137,37 @@ namespace Yolo{
             model->print();
 
             const int MAX_IMAGE_BBOX  = max_objects_;
-            const int NUM_BOX_ELEMENT = 7;      // left, top, right, bottom, confidence, class, keepflag
+            const int NUM_BOX_ELEMENT = 7;   // left, top, right, bottom, confidence, class, keepflag
             int max_batch_size = model->get_max_batch_size();
             auto input = model->input();
             auto output = model->output();
             int num_classes;
-            if(type_ == Type::V8)
-                num_classes = output->size(2) - 4;
-            else
-                num_classes = output->size(2) - 5;
-            input_width_       = input->size(3);
-            input_height_      = input->size(2);
-            tensor_allocator_  = make_shared<MonopolyAllocator<TRT::Tensor>>(max_batch_size * 2);
-            stream_            = model->get_stream();
-            gpu_               = gpuid;
+            if(type_ == Type::V8)   // 84
+                num_classes = output->shape(2) - 4;
+            else   // 85
+                num_classes = output->shape(2) - 5;
+            input_width_  = input->shape(3);
+            input_height_ = input->shape(2);
+            stream_       = model->get_stream();
+            gpu_          = gpuid;
+            tensor_allocator_.reset(new TensorAllocator(max_batch_size * 2));
 
-            TRT::Tensor affine_matrix_device(TRT::DataType::Float);
-            TRT::Tensor output_array_device(TRT::DataType::Float);
+            TRT::Tensor affine_matrix_device{};
+            // output_array_device 是输出 output 经过 decode 的结果
+            TRT::Tensor output_array_device{};
 
-            // load success：设置好了输入，宽高，batch，allocator等
+            // load success：设置好了输入，宽高，batch，allocator等，返回true
             result.set_value(true);
 
+            // 先调整 shape 再 分配 input Tensor GPU 内存
             input->resize_single_dim(0, max_batch_size).to_gpu();
-            affine_matrix_device.set_stream(stream_);
 
+            affine_matrix_device.set_stream(stream_);
             // 这里8个值的目的是保证 8 * sizeof(float) % 32 == 0
+            // 先调整 shape 再 分配 affine_matrix Tensor GPU 内存
             affine_matrix_device.resize(max_batch_size, 8).to_gpu();
-            // output_array_device 是输出 output 经过 decode 的结果
-            // 这里的 1 + MAX_IMAGE_BBOX结构是，counter + bboxes ...
+            // 这里的 1 + MAX_IMAGE_BBOX 结构是，counter + bboxes ...
+            // 仍然是先调整shape再分配GPU内存
             output_array_device.resize(max_batch_size, 1 + MAX_IMAGE_BBOX * NUM_BOX_ELEMENT).to_gpu();
 
             vector<Job> fetch_jobs;
@@ -200,7 +203,7 @@ namespace Yolo{
                     decode_kernel_invoker(predict_batch, output->size(1), num_classes, confidence_threshold_,
                                           affine_matrix, output_array_ptr, MAX_IMAGE_BBOX, type_, stream_);
 
-                    if(nms_method_ == NMSMethod::FastGPU){
+                    if(nms_method_ == NMSMethod::CUDA){
                         nms_kernel_invoker(output_array_ptr, nms_threshold_, MAX_IMAGE_BBOX, stream_);
                     }
                 }
@@ -234,13 +237,14 @@ namespace Yolo{
 
         bool preprocess(Job& job, const cv::Mat& image) override{
             if(tensor_allocator_ == nullptr){
-                INFOE("tensor_allocator_ is nullptr");
+                INFOE("tensor_allocator_ is nullptr.");
                 return false;
             }
             if(image.empty()){
-                INFOE("Image is empty");
+                INFOE("Image is empty.");
                 return false;
             }
+            // 向 allocator 申请一个 tensor
             job.mono_tensor = tensor_allocator_->query();
             if(job.mono_tensor == nullptr){
                 INFOE("Tensor allocator query failed.");
@@ -273,9 +277,9 @@ namespace Yolo{
             preprocess_stream = tensor->get_stream();
             tensor->resize(1, 3, input_height_, input_width_);
 
-            size_t size_image      = image.cols * image.rows * 3;
-            size_t size_matrix     = iLogger::upbound(sizeof(job.additional.d2i), 32);
-            auto workspace         = tensor->get_workspace();
+            size_t size_image = image.cols * image.rows * 3;
+            size_t size_matrix = iLogger::upbound(sizeof(job.additional.d2i), 32);
+            auto workspace = tensor->get_workspace();
             uint8_t* gpu_workspace        = (uint8_t*)workspace->gpu(size_matrix + size_image);
             float*   affine_matrix_device = (float*)gpu_workspace;
             uint8_t* image_device         = size_matrix + gpu_workspace;
@@ -315,7 +319,7 @@ namespace Yolo{
         float confidence_threshold_ = 0;
         float nms_threshold_        = 0;
         int max_objects_            = 1024;
-        NMSMethod nms_method_       = NMSMethod::FastGPU;
+        NMSMethod nms_method_       = NMSMethod::CUDA;
         TRT::CUStream stream_       = nullptr;
         bool use_multi_preprocess_stream_ = false;
         CUDAKernel::Norm normalize_;

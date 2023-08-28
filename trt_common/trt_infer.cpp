@@ -1,5 +1,4 @@
 
-
 #include "trt_infer.hpp"
 #include <cuda_runtime.h>
 #include <NvInferRuntime.h>
@@ -38,6 +37,7 @@ static Logger gLogger;
 
 namespace TRT {
 
+
     template<class T>
     shared_ptr<T> make_nvshared(T* ptr) {
         return shared_ptr<T>(ptr, [](T* p){p->destroy();});
@@ -58,17 +58,6 @@ namespace TRT {
         }
         in.close();
         return data;
-    }
-
-    TRT::DataType convert_trt_datatype(nvinfer1::DataType dt){
-        switch(dt){
-            case nvinfer1::DataType::kFLOAT: return TRT::DataType::Float;
-            case nvinfer1::DataType::kHALF: return TRT::DataType::Float16;
-            case nvinfer1::DataType::kINT32: return TRT::DataType::Int32;
-            default:
-                INFOE("Unsupport data type %d", dt);
-                return TRT::DataType::Float;
-        }
     }
 
     class EngineContext {
@@ -99,15 +88,15 @@ namespace TRT {
             engine_ = make_nvshared(runtime_->deserializeCudaEngine(pdata, size, nullptr));
             if(engine_ == nullptr) return false;
 
-            context_ = make_nvshared(engine_->createExecutionContext());
-            if(context_ == nullptr) return false;
+            exec_context_ = make_nvshared(engine_->createExecutionContext());
+            if(exec_context_ == nullptr) return false;
 
             return true;
         }
 
     private:
         void destroy() {
-            context_.reset();
+            exec_context_.reset();
             engine_.reset();
             runtime_.reset();
             if(owner_stream_)
@@ -118,7 +107,7 @@ namespace TRT {
     public:
         CUStream stream_ = nullptr;
         bool owner_stream_ = false;
-        shared_ptr<IExecutionContext> context_ = nullptr;
+        shared_ptr<IExecutionContext> exec_context_ = nullptr;
         shared_ptr<ICudaEngine> engine_ = nullptr;
         shared_ptr<IRuntime> runtime_ = nullptr;
     };
@@ -157,13 +146,14 @@ namespace TRT {
         vector<shared_ptr<Tensor>> outputs_;
         vector<string> inputs_names_;
         vector<string> outputs_names_;
-        vector<int> inputs_map_to_ordered_index_;
-        vector<int> outputs_map_to_ordered_index_;
-        vector<shared_ptr<Tensor>> ordered_Blobs_;
-        map<string, int> blobs_name_mapper_;
-        shared_ptr<EngineContext> context_;
-        vector<void*> bindings_ptr_;
-        shared_ptr<MixMemory> workspace_;
+        // 以下的index都是在整个输入输出的全局index
+        vector<int> inputs_map_to_ordered_index_; // 输入的index
+        vector<int> outputs_map_to_ordered_index_; // 输出的index
+        vector<shared_ptr<Tensor>> ordered_Blobs_; // 排序的全部输入和输出Tensor
+        map<string, int> blobs_name_mapper_; // 输入输出的名字到index的映射
+        unique_ptr<EngineContext> context_; // 指向包含runtime、engine、execution_context的对象的独占指针
+        vector<void*> bindings_ptr_; // 存放输入输出的GPU内存地址的指针，用来传给enqueueV2函数
+        shared_ptr<MixMemory> workspace_; // 所有输入输出Tensor共有的workspace，主要用来存仿射变换的矩阵
         int device_id_ = 0;
     };
 
@@ -204,8 +194,8 @@ namespace TRT {
     }
 
     void InferImpl::build_engine_input_and_output_mapper() {
-        auto* context = (EngineContext*)this->context_.get();
-        int nbBindings = context->engine_->getNbBindings();
+//        auto* context = (EngineContext*)this->context_.get();
+        int nbBindings = context_->engine_->getNbBindings();
 
         inputs_.clear();
         inputs_names_.clear();
@@ -216,14 +206,14 @@ namespace TRT {
         blobs_name_mapper_.clear();
 
         for(int i = 0; i < nbBindings; ++i){
-            auto dims = context->engine_->getBindingDimensions(i);
-            auto type = context->engine_->getBindingDataType(i);
-            const char* bindingName = context->engine_->getBindingName(i);
+            auto dims = context_->engine_->getBindingDimensions(i);
+            auto type = context_->engine_->getBindingDataType(i);
+            const char* bindingName = context_->engine_->getBindingName(i);
             dims.d[0] = 1;
-            auto newTensor = make_shared<Tensor>(dims.nbDims, dims.d, convert_trt_datatype(type));
+            auto newTensor = make_shared<Tensor>(dims.nbDims, dims.d);
             newTensor->set_stream(context_->stream_);
             newTensor->set_workspace(workspace_);
-            if(context->engine_->bindingIsInput(i)){
+            if(context_->engine_->bindingIsInput(i)){
                 // is input
                 inputs_.push_back(newTensor);
                 inputs_names_.emplace_back(bindingName);
@@ -243,14 +233,14 @@ namespace TRT {
     }
 
     void InferImpl::forward(bool sync) {
-        auto* context = (EngineContext*)context_.get();
+//        auto* context = (EngineContext*)context_.get();
         int inputBatchSize = inputs_[0]->size(0);
 
-        for(int i = 0; i < context->engine_->getNbBindings(); ++i){
-            auto dims = context->engine_->getBindingDimensions(i);
+        for(int i = 0; i < context_->engine_->getNbBindings(); ++i){
+            auto dims = context_->engine_->getBindingDimensions(i);
             dims.d[0] = inputBatchSize;
-            if(context->engine_->bindingIsInput(i))
-                context->context_->setBindingDimensions(i, dims);
+            if(context_->engine_->bindingIsInput(i))
+                context_->exec_context_->setBindingDimensions(i, dims);
         }
 
         for(auto & output : outputs_){
@@ -262,7 +252,7 @@ namespace TRT {
             bindings_ptr_[i] = ordered_Blobs_[i]->gpu();
 
         void** bindingsptr = bindings_ptr_.data();
-        bool exe_res = context->context_->enqueueV2(bindingsptr, context->stream_, nullptr);
+        bool exe_res = context_->exec_context_->enqueueV2(bindingsptr, context_->stream_, nullptr);
         if(!exe_res){
             auto code = cudaGetLastError();
             INFOF("Enqueue failed, code %d[%s], message %s", code, cudaGetErrorName(code), cudaGetErrorString(code));
@@ -349,13 +339,13 @@ namespace TRT {
         for(int i = 0; i < inputs_.size(); ++i){
             auto& tensor = inputs_[i];
             auto& name = inputs_names_[i];
-            INFO("\t\t%d.%s : shape {%s}, %s", i, name.c_str(), tensor->shape_string(), data_type_string(tensor->type()));
+            INFO("\t\t%d.%s : shape {%s}", i, name.c_str(), tensor->shape_string());
         }
         INFO("\tOutputs: %d", outputs_.size());
         for(int i = 0; i < outputs_.size(); ++i){
             auto& tensor = outputs_[i];
             auto& name = outputs_names_[i];
-            INFO("\t\t%d.%s : shape {%s}, %s", i, name.c_str(), tensor->shape_string(), data_type_string(tensor->type()));
+            INFO("\t\t%d.%s : shape {%s}", i, name.c_str(), tensor->shape_string());
         }
     }
 
@@ -383,8 +373,8 @@ namespace TRT {
     }
 
     size_t InferImpl::get_device_memory_size() {
-        auto* context = (EngineContext*)this->context_.get();
-        return context->context_->getEngine().getDeviceMemorySize();
+//        auto* context = (EngineContext*)this->context_.get();
+        return context_->exec_context_->getEngine().getDeviceMemorySize();
     }
 
     std::shared_ptr<MixMemory> InferImpl::get_workspace() {
@@ -395,12 +385,6 @@ namespace TRT {
         shared_ptr<InferImpl> instance{new InferImpl{}};
         if(!instance->load(file)) instance.reset();
         return instance;
-    }
-
-    DeviceMemorySummary get_device_summary() {
-        DeviceMemorySummary info{};
-        checkCudaRuntime(cudaMemGetInfo(&info.available, &info.total));
-        return info;
     }
 
     int get_device_count() {

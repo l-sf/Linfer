@@ -4,7 +4,6 @@
 #include "yolo/yolo.hpp"
 #include <opencv2/opencv.hpp>
 #include "bytetrack/BYTETracker.h"
-#include "deepsort/deepsort.hpp"
 #include <cstdio>
 
 using namespace std;
@@ -31,20 +30,6 @@ static vector<Object> det2tracks(const Yolo::BoxArray& array, const Cond& cond){
 }
 
 
-template<typename Cond>
-static DeepSORT::BBoxes det2boxes(const Yolo::BoxArray& array, const Cond& cond){
-
-    DeepSORT::BBoxes outputs;
-    for(int i = 0; i < array.size(); ++i){
-        auto& abox = array[i];
-
-        if(!cond(abox)) continue;
-        outputs.emplace_back(abox.left, abox.top, abox.right, abox.bottom);
-    }
-    return outputs;
-}
-
-
 void inference_bytetrack(const string& engine_file, int gpuid, Yolo::Type type, const string& video_file){
 
     auto engine = Yolo::create_infer(
@@ -53,7 +38,7 @@ void inference_bytetrack(const string& engine_file, int gpuid, Yolo::Type type, 
             gpuid,                   // gpu id
             0.25f,                      // confidence threshold
             0.45f,                      // nms threshold
-            Yolo::NMSMethod::FastGPU,   // NMS method, fast GPU / CPU
+            Yolo::NMSMethod::CUDA,   // NMS method, fast GPU / CPU
             1024,                       // max objects
             false                       // preprocess use multi stream
     );

@@ -29,9 +29,9 @@ void test_yolo(){
 //    performance("yolov7_qat.trt", 0, Yolo::Type::V7);
 //    batch_inference("yolov8n.trt", 0, Yolo::Type::V8);
 //    performance("yolov8n.trt", 0, Yolo::Type::V8);
-    single_inference("yolov8s.trt", 0, Yolo::Type::V8);
+//    single_inference("yolov8s.trt", 0, Yolo::Type::V8);
     batch_inference("yolov8s.trt", 0, Yolo::Type::V8);
-    performance("yolov8s.trt", 0, Yolo::Type::V8);
+//    performance("yolov8s.trt", 0, Yolo::Type::V8);
 //    batch_inference("yolov8m.trt", 0, Yolo::Type::V8);
 //    performance("yolov8m.trt", 0, Yolo::Type::V8);
 }

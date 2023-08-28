@@ -46,8 +46,6 @@ namespace TRT {
     /// 加载infer，资源获取即初始化
 	std::shared_ptr<Infer> load_infer(const std::string& file);
 
-
 }
-
 
 #endif //TRT_INFER_HPP

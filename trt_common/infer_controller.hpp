@@ -2,7 +2,7 @@
 #define INFER_CONTROLLER_HPP
 
 /// Producer Consumer Model
-/// 提供 InferController 类，让具体应用继承
+/// 提供 InferController 模板类，让具体应用继承
 /// 避免重复书写生产者消费者的代码
 
 #include <string>
@@ -12,7 +12,7 @@
 #include <thread>
 #include <queue>
 #include <condition_variable>
-#include "monopoly_allocator.hpp"
+#include "tensor_allocator.hpp"
 
 template<class Input, class Output, class StartParam=std::tuple<std::string, int>, class JobAdditional=int>
 class InferController{
@@ -21,7 +21,7 @@ public:
         Input input;
         Output output;
         JobAdditional additional;
-        MonopolyAllocator<TRT::Tensor>::MonopolyDataPointer mono_tensor;
+        TensorAllocator::MonoDataPtr mono_tensor;
         std::shared_ptr<std::promise<Output>> pro;
     };
 
@@ -55,7 +55,7 @@ public:
 
         std::promise<bool> pro;
         start_param_ = param;
-        worker_      = std::make_shared<std::thread>(&InferController::worker, this, std::ref(pro));
+        worker_.reset(new std::thread(&InferController::worker, this, std::ref(pro)));
         return pro.get_future().get();
     }
 
@@ -145,11 +145,11 @@ protected:
 protected:
     StartParam start_param_;
     std::atomic<bool> run_{};
-    std::mutex jobs_lock_;
+    std::mutex jobs_lock_;  // 确保往队列里添加任务和取任务同一时间只能执行一种
     std::queue<Job> jobs_;
-    std::shared_ptr<std::thread> worker_;
+    std::unique_ptr<std::thread> worker_;
     std::condition_variable cond_;
-    std::shared_ptr<MonopolyAllocator<TRT::Tensor>> tensor_allocator_;
+    std::unique_ptr<TensorAllocator> tensor_allocator_;
 };
 
 #endif // INFER_CONTROLLER_HPP

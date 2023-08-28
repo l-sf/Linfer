@@ -6,7 +6,7 @@
 
 ## Introduction
 
-基于 TensorRT 的 C++ 高性能推理库，未来计划支持 Openvino 和 rknn 框架的 C++ 推理。
+基于 TensorRT 的 C++ 高性能推理库。
 
 
 

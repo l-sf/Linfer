@@ -11,11 +11,10 @@
 struct CUstream_st;
 typedef CUstream_st CUStreamRaw;
 
-#define CURRENT_DEVICE_ID     0
+#define CURRENT_DEVICE_ID 0
 
 namespace TRT {
 
-    typedef struct{unsigned short _;} float16;
     typedef CUStreamRaw* CUStream;
 
     enum class DataHead : int{
@@ -23,19 +22,6 @@ namespace TRT {
         Device = 1,
         Host   = 2
     };
-
-    enum class DataType : int {
-        Float = 0,
-        Float16 = 1,
-        Int32 = 2,
-        UInt8 = 3
-    };
-
-    float float16_to_float(float16 value);
-    float16 float_to_float16(float value);
-    int data_type_size(DataType dt);
-    const char* data_head_string(DataHead dh);
-    const char* data_type_string(DataType dt);
 
     
     /// -----------------------------------------------------------------------------------------------
@@ -94,10 +80,10 @@ namespace TRT {
         Tensor(const Tensor& other) = delete;
         Tensor& operator = (const Tensor& other) = delete;
 
-        explicit Tensor(DataType dtype = DataType::Float, std::shared_ptr<MixMemory> data = nullptr, int device_id = CURRENT_DEVICE_ID);
-        explicit Tensor(int n, int c, int h, int w, DataType dtype = DataType::Float, std::shared_ptr<MixMemory> data = nullptr, int device_id = CURRENT_DEVICE_ID);
-        explicit Tensor(int ndims, const int* dims, DataType dtype = DataType::Float, std::shared_ptr<MixMemory> data = nullptr, int device_id = CURRENT_DEVICE_ID);
-        explicit Tensor(const std::vector<int>& dims, DataType dtype = DataType::Float, std::shared_ptr<MixMemory> data = nullptr, int device_id = CURRENT_DEVICE_ID);
+        explicit Tensor(std::unique_ptr<MixMemory> data = nullptr, int device_id = CURRENT_DEVICE_ID);
+        explicit Tensor(int n, int c, int h, int w, std::unique_ptr<MixMemory> data = nullptr, int device_id = CURRENT_DEVICE_ID);
+        explicit Tensor(int ndims, const int* dims, std::unique_ptr<MixMemory> data = nullptr, int device_id = CURRENT_DEVICE_ID);
+        explicit Tensor(const std::vector<int>& dims, std::unique_ptr<MixMemory> data = nullptr, int device_id = CURRENT_DEVICE_ID);
         virtual ~Tensor();
 
         /// 以下函数用来 让外部获取 Tensor 的一些基本属性
@@ -110,16 +96,13 @@ namespace TRT {
         int height()  const{return shape_[2];}
         int width()   const{return shape_[3];}
 
-        DataType type()                const { return dtype_; }
         const std::vector<int>& dims() const { return shape_; }
         const std::vector<size_t>& strides() const {return strides_;}
         int bytes()                    const { return bytes_; }
-        int bytes(int start_axis)      const { return count(start_axis) * element_size(); }
-        int element_size()             const { return data_type_size(dtype_); }
+        int bytes(int start_axis)      const { return count(start_axis) * sizeof(float); }
         DataHead head()                const { return head_; }
         std::shared_ptr<Tensor> clone() const;
         Tensor& release();
-        Tensor& set_to(float value);
         bool empty() const;
         int  count(int start_axis = 0) const;
         int device() const{return device_id_;}
@@ -162,11 +145,7 @@ namespace TRT {
         int offset_array(const std::vector<int>& index) const;
         int offset_array(size_t size, const int* index_array) const;
 
-        Tensor& to_half();
-        Tensor& to_float();
-        
-        std::shared_ptr<MixMemory> get_data()             const {return data_;}
-        std::shared_ptr<MixMemory> get_workspace()        const {return workspace_;}
+        std::shared_ptr<MixMemory> get_workspace() const { return workspace_; }
         Tensor& set_workspace(std::shared_ptr<MixMemory> workspace) {workspace_ = workspace; return *this;}
         Tensor& synchronize();
         bool is_stream_owner() const {return stream_owner_;}
@@ -175,31 +154,26 @@ namespace TRT {
 
         Tensor& set_mat     (int n, const cv::Mat& image);
         Tensor& set_norm_mat(int n, const cv::Mat& image, float mean[3], float std[3]);
-        cv::Mat at_mat(int n = 0, int c = 0) { return cv::Mat(height(), width(), CV_32F, cpu<float>(n, c)); }
+        cv::Mat at_mat(int n = 0, int c = 0) { return {height(), width(), CV_32F, cpu<float>(n, c)}; }
 
-
-
-        void reference_data(const std::vector<int>& shape, void* cpu_data, size_t cpu_size, void* gpu_data, size_t gpu_size, DataType dtype);
-        bool save_to_file(const std::string& file) const;
-        bool load_from_file(const std::string& file);
+        void reference_data(const std::vector<int>& shape, void* cpu_data, size_t cpu_size, void* gpu_data, size_t gpu_size);
 
     private:
         Tensor& compute_shape_string();
-        Tensor& adajust_memory_by_update_dims_or_type();
-        void setup_data(std::shared_ptr<MixMemory> data);
+        Tensor& adajust_memory_by_update_dims();  // 设置bytes大小
+        void setup_data(std::unique_ptr<MixMemory> data);
 
     private:
         std::vector<int> shape_;
         std::vector<size_t> strides_;  // 记录当前维度上index改变1,内存上应该改变多少位
         size_t bytes_    = 0;
         DataHead head_   = DataHead::Init;
-        DataType dtype_  = DataType::Float;
         CUStream stream_ = nullptr;
         bool stream_owner_ = false;
         int device_id_   = 0;
         char shape_string_[100]{};  // 存放形状字符串描述，如："1 x 3 x 640 x 640"
         char descriptor_string_[100]{};
-        std::shared_ptr<MixMemory> data_;
+        std::unique_ptr<MixMemory> data_;
         std::shared_ptr<MixMemory> workspace_;  // 存放附带的一些内存，如预处理的matrix要放到GPU上
     };
 };

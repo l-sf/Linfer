@@ -612,14 +612,5 @@ namespace iLogger{
         return save_file(file, data.data(), data.size(), mk_dirs);
     }
 
-    static volatile bool g_has_exit_signal = false;
-    static int g_signum = 0;
-    static void signal_callback_handler(int signum){
-        INFO("Capture interrupt signal.");
-        g_has_exit_signal = true;
-        g_signum = signum;
-    }
-
-
 
 }; // namespace Logger
