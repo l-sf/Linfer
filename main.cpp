@@ -41,8 +41,8 @@ void test_track(){
 }
 
 int main(){
-    test_yolo();
+//    test_yolo();
 //    test_track();
-//    test_ptq();
+    test_ptq();
     return 0;
 }

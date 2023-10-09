@@ -188,6 +188,7 @@ bool build_model(const string& onnx_path, const string& engine_path, const strin
 
     input_dims.d[0] = 1;
     config->setFlag(nvinfer1::BuilderFlag::kINT8);
+    config->setFlag(nvinfer1::BuilderFlag::kFP16);
 
     auto preprocess = [](
             int current, int count, const std::vector<std::string>& files,
