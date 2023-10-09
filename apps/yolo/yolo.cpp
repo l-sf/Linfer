@@ -178,7 +178,7 @@ namespace Yolo{
                 for(int ibatch = 0; ibatch < infer_batch_size; ++ibatch){
                     auto& job  = fetch_jobs[ibatch];
                     auto& mono_tensor = job.mono_tensor->data();
-
+                    // mono_tensor 存放预处理之后的 input_image，其附带的 workspace 存放 affine_matrix
                     if(mono_tensor->get_stream() != stream_){
                         // synchronize preprocess stream finish
                         checkCudaRuntime(cudaStreamSynchronize(mono_tensor->get_stream()));
@@ -186,7 +186,7 @@ namespace Yolo{
 
                     affine_matrix_device.copy_from_gpu(affine_matrix_device.offset(ibatch), mono_tensor->get_workspace()->gpu(), 6);
                     input->copy_from_gpu(input->offset(ibatch), mono_tensor->gpu(), mono_tensor->count());
-                    job.mono_tensor->release();
+                    job.mono_tensor->release(); // 释放掉这个mono_tensor
                 }
                 
                 // 进行推理，一次推理一批
@@ -200,7 +200,7 @@ namespace Yolo{
                     float* output_array_ptr   = output_array_device.gpu<float>(ibatch);
                     auto affine_matrix = affine_matrix_device.gpu<float>(ibatch);
                     checkCudaRuntime(cudaMemsetAsync(output_array_ptr, 0, sizeof(int), stream_));
-                    decode_kernel_invoker(predict_batch, output->size(1), num_classes, confidence_threshold_,
+                    decode_kernel_invoker(predict_batch, output->shape(1), num_classes, confidence_threshold_,
                                           affine_matrix, output_array_ptr, MAX_IMAGE_BBOX, type_, stream_);
 
                     if(nms_method_ == NMSMethod::CUDA){
@@ -258,7 +258,7 @@ namespace Yolo{
             if(tensor == nullptr){
                 // not init
                 tensor = make_shared<TRT::Tensor>();
-                tensor->set_workspace(make_shared<TRT::MixMemory>());
+                tensor->set_workspace(make_shared<TRT::MixMemory>()); // 新创建一个workspace
 
                 if(use_multi_preprocess_stream_){
                     checkCudaRuntime(cudaStreamCreate(&preprocess_stream));
@@ -278,6 +278,7 @@ namespace Yolo{
             tensor->resize(1, 3, input_height_, input_width_);
 
             size_t size_image = image.cols * image.rows * 3;
+            // 对齐 32 字节
             size_t size_matrix = iLogger::upbound(sizeof(job.additional.d2i), 32);
             auto workspace = tensor->get_workspace();
             uint8_t* gpu_workspace        = (uint8_t*)workspace->gpu(size_matrix + size_image);

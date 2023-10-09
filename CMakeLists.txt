@@ -15,7 +15,7 @@ file(GLOB_RECURSE CPPS
 
 # set(OpenCV_DIR   "/home/lsf/Third_party/OPENCV_3_4_8/opencv/build")
 set(CUDA_DIR      "/usr/local/cuda")
-set(TENSORRT_DIR  "/home/lsf/Third_party/TensorRT-8.5.3.1")
+set(TENSORRT_DIR  "/home/lsf/Third_party/TensorRT-8.6.1.6")
 find_package(OpenCV REQUIRED)
 find_package(CUDA REQUIRED)
 include_directories(
@@ -31,7 +31,7 @@ link_directories(
 )
 list(APPEND ALL_LIBS
         cuda cublas cudart cudnn
-        nvinfer nvinfer_plugin
+        nvinfer nvinfer_plugin nvonnxparser
         pthread ${OpenCV_LIBS}
         )
 

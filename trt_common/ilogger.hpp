@@ -64,8 +64,8 @@ namespace iLogger{
     void __log_func(const char* file, int line, LogLevel level, const char* fmt, ...);
     void destroy_logger();
 
-    inline int upbound(int n, int align = 32){return (n + align - 1) / align * align;}
-};
+    inline int upbound(int n, int align = 32) { return (n + align - 1) / align * align;}
+}
 
 
 #endif // ILOGGER_HPP

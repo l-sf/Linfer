@@ -207,7 +207,6 @@ namespace TRT {
 
         for(int i = 0; i < nbBindings; ++i){
             auto dims = context_->engine_->getBindingDimensions(i);
-            auto type = context_->engine_->getBindingDataType(i);
             const char* bindingName = context_->engine_->getBindingName(i);
             dims.d[0] = 1;
             auto newTensor = make_shared<Tensor>(dims.nbDims, dims.d);
@@ -234,7 +233,7 @@ namespace TRT {
 
     void InferImpl::forward(bool sync) {
 //        auto* context = (EngineContext*)context_.get();
-        int inputBatchSize = inputs_[0]->size(0);
+        int inputBatchSize = inputs_[0]->shape(0);
 
         for(int i = 0; i < context_->engine_->getNbBindings(); ++i){
             auto dims = context_->engine_->getBindingDimensions(i);

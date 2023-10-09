@@ -174,7 +174,7 @@ namespace TRT {
         char shape_string_[100]{};  // 存放形状字符串描述，如："1 x 3 x 640 x 640"
         char descriptor_string_[100]{};
         std::unique_ptr<MixMemory> data_;
-        std::shared_ptr<MixMemory> workspace_;  // 存放附带的一些内存，如预处理的matrix要放到GPU上
+        std::shared_ptr<MixMemory> workspace_;  // 存放附带的一些内存，如预处理的matrix、image要放到GPU上
     };
 };
 

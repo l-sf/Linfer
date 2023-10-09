@@ -8,7 +8,7 @@ void performance(const string& engine_file, int gpuid, Yolo::Type type);
 void batch_inference(const string& engine_file, int gpuid, Yolo::Type type);
 void single_inference(const string& engine_file, int gpuid, Yolo::Type type);
 void inference_bytetrack(const string& engine_file, int gpuid, Yolo::Type type, const string& video_file);
-
+bool test_ptq();
 
 void test_yolo(){
 //    batch_inference("yolov5s.trt", 0, Yolo::Type::V5);
@@ -43,5 +43,6 @@ void test_track(){
 int main(){
     test_yolo();
 //    test_track();
+//    test_ptq();
     return 0;
 }
