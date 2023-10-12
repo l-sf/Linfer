@@ -1,6 +1,3 @@
-//
-// Created by lsf on 23-10-9.
-//
 
 #include <NvInfer.h>
 #include <NvOnnxParser.h>

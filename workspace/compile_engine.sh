@@ -119,3 +119,25 @@ trtexec --onnx=./onnx_models/yolov8m.onnx \
 		--optShapes=images:1x3x640x640 \
 		--maxShapes=images:8x3x640x640 \
 		--fp16
+
+echo ""
+trtexec --onnx=./onnx_models/yolov8l.onnx \
+		--saveEngine=./yolov8l.trt \
+		--buildOnly \
+		--minShapes=images:1x3x640x640 \
+		--optShapes=images:1x3x640x640 \
+		--maxShapes=images:8x3x640x640 \
+		--fp16
+
+
+echo ""
+echo ""
+echo "************************ compile rtdetr models ***************************"
+echo ""
+trtexec --onnx=./onnx_models/rtdetr_r50vd_6x_coco_dynamic.onnx \
+		--saveEngine=./rtdetr_r50vd_6x_coco_dynamic_fp16.trt \
+		--buildOnly \
+        --minShapes=image:1x3x640x640 \
+        --optShapes=image:1x3x640x640 \
+        --maxShapes=image:8x3x640x640 \
+        --fp16

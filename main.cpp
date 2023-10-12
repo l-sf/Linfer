@@ -4,11 +4,20 @@
 
 using namespace std;
 
+void performance(const string& engine_file, int gpuid);
+void batch_inference(const string& engine_file, int gpuid);
+void single_inference(const string& engine_file, int gpuid);
 void performance(const string& engine_file, int gpuid, Yolo::Type type);
 void batch_inference(const string& engine_file, int gpuid, Yolo::Type type);
 void single_inference(const string& engine_file, int gpuid, Yolo::Type type);
 void inference_bytetrack(const string& engine_file, int gpuid, Yolo::Type type, const string& video_file);
 bool test_ptq();
+
+void test_rtdetr(){
+    batch_inference("rtdetr_r50vd_6x_coco_dynamic_fp16.trt", 0);
+//    single_inference("rtdetr_r50vd_6x_coco_dynamic_fp16.trt", 0);
+//    performance("rtdetr_r50vd_6x_coco_dynamic_fp16.trt", 0);
+}
 
 void test_yolo(){
 //    batch_inference("yolov5s.trt", 0, Yolo::Type::V5);
@@ -29,11 +38,11 @@ void test_yolo(){
 //    performance("yolov7_qat.trt", 0, Yolo::Type::V7);
 //    batch_inference("yolov8n.trt", 0, Yolo::Type::V8);
 //    performance("yolov8n.trt", 0, Yolo::Type::V8);
-//    single_inference("yolov8s.trt", 0, Yolo::Type::V8);
-    batch_inference("yolov8s.trt", 0, Yolo::Type::V8);
+//    batch_inference("yolov8s.trt", 0, Yolo::Type::V8);
 //    performance("yolov8s.trt", 0, Yolo::Type::V8);
 //    batch_inference("yolov8m.trt", 0, Yolo::Type::V8);
 //    performance("yolov8m.trt", 0, Yolo::Type::V8);
+    single_inference("yolov8l.trt", 0, Yolo::Type::V8);
 }
 
 void test_track(){
@@ -41,8 +50,9 @@ void test_track(){
 }
 
 int main(){
+    test_rtdetr();
 //    test_yolo();
 //    test_track();
-    test_ptq();
+//    test_ptq();
     return 0;
 }

@@ -1,5 +1,4 @@
 
-
 #include "trt_common/cuda_tools.hpp"
 #include "yolo.hpp"
 

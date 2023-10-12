@@ -1,5 +1,5 @@
-#ifndef YOLO_HPP
-#define YOLO_HPP
+#ifndef LINFER_RTDETR_HPP
+#define LINFER_RTDETR_HPP
 
 #include <vector>
 #include <memory>
@@ -10,9 +10,9 @@
 
 
 /// -------------------------- 封装接口类 ---------------------------
-/// -------------------- 支持 YoloV5/X/V7/V8 -----------------------
 
-namespace Yolo{
+
+namespace RTDETR{
 
     using namespace std;
 
@@ -26,21 +26,7 @@ namespace Yolo{
                 :left(left), top(top), right(right), bottom(bottom), confidence(confidence), label(label){}
     };
 
-    typedef std::vector<Box> BoxArray;
-
-    enum class Type : int{
-        V5 = 0,
-        X  = 1,
-        V7 = 2,
-        V8 = 3
-    };
-
-    enum class NMSMethod : int{
-        CPU = 0, 
-        CUDA = 1 
-    };
-
-    const char* type_name(Type type);
+    using BoxArray = std::vector<Box>;
 
     class Infer{
     public:
@@ -49,12 +35,13 @@ namespace Yolo{
     };
 
     shared_ptr<Infer> create_infer(
-        const string& engine_file, Type type, int gpuid,
-        float confidence_threshold=0.25f, float nms_threshold=0.5f,
-        NMSMethod nms_method = NMSMethod::CUDA, int max_objects = 1024,
-        bool use_multi_preprocess_stream = false
+            const string& engine_file, int gpuid,
+            float confidence_threshold = 0.6f, int max_objects = 300,
+            bool use_multi_preprocess_stream = false
     );
 
-} // namespace Yolo
 
-#endif // YOLO_HPP
+} // namespace RTDETR
+
+
+#endif //LINFER_RTDETR_HPP
