@@ -41,7 +41,7 @@
 
 ```c++
 auto infer = Yolo::create_infer("yolov5s.trt", Yolo::Type::V5, 0); 
-auto image = cv::imread("imgs/car.jpg");
+auto image = cv::imread("imgs/bus.jpg");
 auto boxes = infer->commit(image).get();
 ```
 
