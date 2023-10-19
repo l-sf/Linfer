@@ -154,6 +154,7 @@ namespace TRT {
 
         Tensor& set_mat     (int n, const cv::Mat& image);
         Tensor& set_norm_mat(int n, const cv::Mat& image, float mean[3], float std[3]);
+        Tensor& set_norm_mat_invert(int n, const cv::Mat& image, float mean[3], float std[3]);
         cv::Mat at_mat(int n = 0, int c = 0) { return {height(), width(), CV_32F, cpu<float>(n, c)}; }
 
         void reference_data(const std::vector<int>& shape, void* cpu_data, size_t cpu_size, void* gpu_data, size_t gpu_size);

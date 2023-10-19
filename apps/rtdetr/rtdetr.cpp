@@ -41,20 +41,6 @@ namespace RTDETR{
         }
     };
 
-    static float iou(const Box& a, const Box& b){
-        float cross_left   = std::max(a.left, b.left);
-        float cross_top    = std::max(a.top, b.top);
-        float cross_right  = std::min(a.right, b.right);
-        float cross_bottom = std::min(a.bottom, b.bottom);
-
-        float cross_area = std::max(0.0f, cross_right - cross_left) * std::max(0.0f, cross_bottom - cross_top);
-        float union_area = std::max(0.0f, a.right - a.left) * std::max(0.0f, a.bottom - a.top)
-                           + std::max(0.0f, b.right - b.left) * std::max(0.0f, b.bottom - b.top) - cross_area;
-        if(cross_area == 0.f || union_area == 0.f) return 0.0f;
-        return cross_area / union_area;
-    }
-
-
     using ControllerImpl = InferController<cv::Mat, BoxArray, tuple<string, int>, AffineMatrix>;
 
     class InferImpl : public Infer, public ControllerImpl{
@@ -106,7 +92,7 @@ namespace RTDETR{
             // output_array_device 是输出 output 经过 decode 的结果
             TRT::Tensor output_array_device{};
 
-            // load success：设置好了输入，宽高，batch，allocator等，返回true
+            /// load success：设置好了输入，宽高，batch，allocator等，返回true
             result.set_value(true);
 
             // 先调整 shape 再 分配 input Tensor GPU 内存

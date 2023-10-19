@@ -5,6 +5,9 @@ set(CMAKE_BUILD_TYPE Debug)
 #set(CMAKE_BUILD_TYPE Release)
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/workspace)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/workspace)
+set(CMAKE_SKIP_BUILD_RPATH False)
+set(CMAKE_SKIP_RPATH False)
+set(CMAKE_BUILD_RPATH "/home/lsf/Third_party/TensorRT-8.6.1.6/lib")
 
 file(GLOB_RECURSE CPPS
         ${PROJECT_SOURCE_DIR}/apps/*.cpp

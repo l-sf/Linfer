@@ -22,16 +22,9 @@
 
 ## NEW
 
-支持目标检测算法 RT-DETR ！！！
+🚀支持单目标跟踪 OSTrack、LightTrack ！！！单独的单目标跟踪仓库为 [github](https://github.com/l-sf/Track-trt) 
 
-
-
-## TODO
-
-- [ ]  STARK-lightning
-- [ ]  OSTrack
-- [ ]  yolov6
-- [ ]  yolov8 ptq & qat
+🚀支持目标检测算法 RT-DETR ！！！
 
 
 

@@ -482,6 +482,34 @@ namespace TRT{
 		return *this;
 	}
 
+    Tensor& Tensor::set_norm_mat_invert(int n, const cv::Mat& image, float mean[3], float std[3]) {
+        Assert(image.channels() == 3 && !image.empty());
+        Assert(ndims() == 4 && n < shape_[0]);
+        to_cpu(false);
+
+        int width   = shape_[3];
+        int height  = shape_[2];
+        cv::Mat inputframe = image;
+        if(inputframe.size() != cv::Size(width, height))
+            cv::resize(inputframe, inputframe, cv::Size(width, height));
+
+        if(CV_MAT_DEPTH(inputframe.type()) != CV_32F){
+            inputframe.convertTo(inputframe, CV_32F);
+        }
+
+        cv::Mat ms[3];
+        for (int c = 0; c < 3; ++c)
+            ms[c] = cv::Mat(height, width, CV_32F, cpu<float>(n, 2 - c));
+
+        cv::split(inputframe, ms);
+
+        float scale = 1.f / 255.f;
+        for (int c = 0; c < 3; ++c)
+            ms[c] = (ms[c] * scale - mean[c]) / std[c];
+
+        return *this;
+    }
+
 	Tensor& Tensor::set_mat(int n, const cv::Mat& _image) {
 		cv::Mat image = _image;
 		Assert(!image.empty() && CV_MAT_DEPTH(image.type()) == CV_32F);

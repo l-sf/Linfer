@@ -6,7 +6,6 @@
 #include <string>
 #include <future>
 #include <opencv2/opencv.hpp>
-#include "trt_common/trt_tensor.hpp"
 
 
 /// -------------------------- 封装接口类 ---------------------------

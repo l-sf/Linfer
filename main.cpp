@@ -11,6 +11,7 @@ void performance(const string& engine_file, int gpuid, Yolo::Type type);
 void batch_inference(const string& engine_file, int gpuid, Yolo::Type type);
 void single_inference(const string& engine_file, int gpuid, Yolo::Type type);
 void inference_bytetrack(const string& engine_file, int gpuid, Yolo::Type type, const string& video_file);
+void infer_track(int Mode, const string& path);
 bool test_ptq();
 
 void test_rtdetr(){
@@ -46,13 +47,14 @@ void test_yolo(){
 }
 
 void test_track(){
-    inference_bytetrack("yolov8s.trt", 0, Yolo::Type::V8, "videos/palace.mp4");
+//    inference_bytetrack("yolov8s.trt", 0, Yolo::Type::V8, "videos/palace.mp4");
+    infer_track(2, "Woman/img/%04d.jpg");
 }
 
 int main(){
-    test_rtdetr();
+//    test_rtdetr();
 //    test_yolo();
-//    test_track();
+    test_track();
 //    test_ptq();
     return 0;
 }

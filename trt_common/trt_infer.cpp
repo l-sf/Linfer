@@ -208,42 +208,62 @@ namespace TRT {
         for(int i = 0; i < nbBindings; ++i){
             auto dims = context_->engine_->getBindingDimensions(i);
             const char* bindingName = context_->engine_->getBindingName(i);
-            dims.d[0] = 1;
-            auto newTensor = make_shared<Tensor>(dims.nbDims, dims.d);
-            newTensor->set_stream(context_->stream_);
-            newTensor->set_workspace(workspace_);
-            if(context_->engine_->bindingIsInput(i)){
-                // is input
-                inputs_.push_back(newTensor);
-                inputs_names_.emplace_back(bindingName);
-                inputs_map_to_ordered_index_.push_back(ordered_Blobs_.size());
+            if(dims.nbDims == 4){
+                dims.d[0] = 1;
+                auto newTensor = make_shared<Tensor>(dims.nbDims, dims.d);
+                newTensor->set_stream(context_->stream_);
+                newTensor->set_workspace(workspace_);
+                if(context_->engine_->bindingIsInput(i)){
+                    // is input
+                    inputs_.push_back(newTensor);
+                    inputs_names_.emplace_back(bindingName);
+                    inputs_map_to_ordered_index_.push_back(ordered_Blobs_.size());
+                }
+                else{
+                    // is output
+                    outputs_.push_back(newTensor);
+                    outputs_names_.emplace_back(bindingName);
+                    outputs_map_to_ordered_index_.push_back(ordered_Blobs_.size());
+                }
+                blobs_name_mapper_[bindingName] = i;
+                ordered_Blobs_.push_back(newTensor);
             }
             else{
-                // is output
-                outputs_.push_back(newTensor);
-                outputs_names_.emplace_back(bindingName);
-                outputs_map_to_ordered_index_.push_back(ordered_Blobs_.size());
+                auto newTensor = make_shared<Tensor>(dims.nbDims, dims.d);
+                newTensor->set_stream(context_->stream_);
+                newTensor->set_workspace(workspace_);
+                if(context_->engine_->bindingIsInput(i)){
+                    // is input
+                    inputs_.push_back(newTensor);
+                    inputs_names_.emplace_back(bindingName);
+                    inputs_map_to_ordered_index_.push_back(ordered_Blobs_.size());
+                }
+                else{
+                    // is output
+                    outputs_.push_back(newTensor);
+                    outputs_names_.emplace_back(bindingName);
+                    outputs_map_to_ordered_index_.push_back(ordered_Blobs_.size());
+                }
+                blobs_name_mapper_[bindingName] = i;
+                ordered_Blobs_.push_back(newTensor);
             }
-            blobs_name_mapper_[bindingName] = i;
-            ordered_Blobs_.push_back(newTensor);
         }
 
         bindings_ptr_.resize(ordered_Blobs_.size());
     }
 
     void InferImpl::forward(bool sync) {
-//        auto* context = (EngineContext*)context_.get();
         int inputBatchSize = inputs_[0]->shape(0);
 
         for(int i = 0; i < context_->engine_->getNbBindings(); ++i){
             auto dims = context_->engine_->getBindingDimensions(i);
-            dims.d[0] = inputBatchSize;
+            if(dims.nbDims == 4) dims.d[0] = inputBatchSize;
             if(context_->engine_->bindingIsInput(i))
                 context_->exec_context_->setBindingDimensions(i, dims);
         }
 
         for(auto & output : outputs_){
-            output->resize_single_dim(0, inputBatchSize);
+            if(output->ndims() == 4) output->resize_single_dim(0, inputBatchSize);
             output->to_gpu(false);
         }
 
