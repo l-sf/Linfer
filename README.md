@@ -87,6 +87,8 @@ auto boxes = infer->commit(image).get();
 |  yolov8_s  |   fp16    |  640x640   |   81.40   |   84.74   |
 |  yolov8_l  |   fp16    |  640x640   |    13     |    tbd    |
 | rtdetr_r50 |   fp16    |  640x640   |    12     |    tbd    |
+| lighttrack |   fp16    |  256x256   |    100    |    tbd    |
+|  ostrack   |   fp16    |  256x256   |   33.3    |    tbd    |
 
 
 
