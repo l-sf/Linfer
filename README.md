@@ -12,7 +12,7 @@
 
 ## Highlights
 
-- 支持目标检测算法 RT-DETR，Yolo 系列 5/X/7/8 ，多目标跟踪算法 Bytetrack；
+- 支持目标检测 RT-DETR，Yolo 系列 5/X/7/8 ，多目标跟踪 Bytetrack，单目标跟踪 OSTrack、LightTrack；
 - 预处理和后处理实现CUDA核函数，在 jetson 边缘端也能高性能推理；
 - 封装Tensor、Infer，实现内存复用、CPU/GPU 内存之间自动拷贝、引擎上下文管理等，方便使用；
 - 推理过程实现生产者消费者模型，实现预处理和推理的并行化，进一步提升性能；
@@ -20,11 +20,15 @@
 
 
 
-## NEW
+## Update News
 
-🚀支持单目标跟踪 OSTrack、LightTrack ！！！单独的单目标跟踪仓库为 [github](https://github.com/l-sf/Track-trt) 
+🚀（2023.10.19）支持单目标跟踪 OSTrack、LightTrack ！！！单独的单目标跟踪仓库为 [github](https://github.com/l-sf/Track-trt) 
 
-🚀支持目标检测算法 RT-DETR ！！！
+🚀（2023.10.09）支持目标检测算法 RT-DETR ！！！
+
+🚀（2023.08.26）支持 int8 量化！！！
+
+🚀（2023.07.19）支持目标检测 Yolo 系列 5/X/7/8，多目标跟踪 Bytetrack。
 
 
 
