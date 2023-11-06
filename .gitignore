@@ -5,6 +5,8 @@
 **/build/**
 **/infer_res/**
 **/output.mp4
+**/res_mot.mp4
+**/res_yolop.mp4
 **/pro
 **/*.so
 **/*.pt

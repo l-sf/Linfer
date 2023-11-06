@@ -12,6 +12,9 @@ void batch_inference(const string& engine_file, int gpuid, Yolo::Type type);
 void single_inference(const string& engine_file, int gpuid, Yolo::Type type);
 void inference_bytetrack(const string& engine_file, int gpuid, Yolo::Type type, const string& video_file);
 void infer_track(int Mode, const string& path);
+void inference_yolop(const string& engine_file, int gpuid);
+void infer_video_yolop(const string& engine_file, int gpuid);
+void performance_yolop(const string& engine_file, int gpuid);
 bool test_ptq();
 
 void test_rtdetr(){
@@ -51,10 +54,17 @@ void test_track(){
     infer_track(2, "Woman/img/%04d.jpg");
 }
 
+void test_yolop(){
+//    inference_yolop("yolop-640.trt", 0);
+    infer_video_yolop("yolop-640.trt", 0);
+//    performance_yolop("yolop-640.trt", 0);
+}
+
 int main(){
 //    test_rtdetr();
 //    test_yolo();
-    test_track();
+    test_yolop();
+//    test_track();
 //    test_ptq();
     return 0;
 }

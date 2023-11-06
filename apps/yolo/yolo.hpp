@@ -50,7 +50,7 @@ namespace Yolo{
 
     shared_ptr<Infer> create_infer(
         const string& engine_file, Type type, int gpuid,
-        float confidence_threshold=0.25f, float nms_threshold=0.5f,
+        float confidence_threshold=0.25f, float nms_threshold=0.45f,
         NMSMethod nms_method = NMSMethod::CUDA, int max_objects = 1024,
         bool use_multi_preprocess_stream = false
     );

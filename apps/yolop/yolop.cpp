@@ -16,10 +16,10 @@ namespace YoloP{
             int max_objects, cudaStream_t stream
     );
 
-    void decode_drive_lane_kernel_invoker(
-            float* pred_drive, float* parray_drive,
-            float* pred_lane, float* parray_lane,
-            int height, int width, cudaStream_t stream
+    void decode_mask_kernel_invoker(
+            float* pred_drive, float* pred_lane, uint8_t* pdst_out,
+            int in_width, int in_height, float* affine_matrix,
+            int dst_width, int dst_height, cudaStream_t stream
     );
 
     struct AffineMatrix{
@@ -107,39 +107,52 @@ namespace YoloP{
             gpu_          = gpuid;
 
             // 分配 input Tensor GPU 内存
-            input_->to_gpu();
-            // 这里的 1 + MAX_IMAGE_BBOX 结构是，counter + bboxes ...
-            // 先调整shape再分配GPU内存
-            det_array_->resize(1, 1 + max_objects_ * num_box_elements_).to_gpu();
-            drive_array_->resize(1, input_height_, input_width_).to_gpu();
-            lane_array_->resize(1, input_height_, input_width_).to_gpu();
+            input_->resize(1, 3, input_height_, input_width_).to_gpu();
 
             return true;
         }
 
-        shared_ptr<TBMM> detect(const cv::Mat& image) override{
+        PBM detect(const cv::Mat& image) override{
             // 预处理
             AffineMatrix affineMatrix{};
             preprocess(image, affineMatrix);
+            cv::Mat drive_lane_mat(image.size(), CV_8UC3);
+            uint8_t* pdrive_lane_mat_device = nullptr;
+            checkCudaRuntime(cudaMallocAsync(&pdrive_lane_mat_device, image.cols * image.rows * 3, stream_));
+            checkCudaRuntime(cudaMemcpyAsync(pdrive_lane_mat_device, image.data, image.cols * image.rows * 3, cudaMemcpyHostToDevice, stream_));
+
+            TRT::Tensor affine_matrix_device{};
+            TRT::Tensor invert_affine_matrix_device{};
+            // 这里8个值的目的是保证 8 * sizeof(float) % 32 == 0
+            // 先调整 shape 再 分配 affine_matrix Tensor GPU 内存
+            affine_matrix_device.set_stream(stream_);
+            affine_matrix_device.resize(1, 8).to_gpu();
+            invert_affine_matrix_device.set_stream(stream_);
+            invert_affine_matrix_device.resize(1, 8).to_gpu();
+
+            // affine matrix
+            invert_affine_matrix_device.copy_from_gpu(invert_affine_matrix_device.offset(0), input_->get_workspace()->gpu(), 6);
+            checkCudaRuntime(cudaMemcpyAsync(affine_matrix_device.gpu<float>(), affineMatrix.i2d, sizeof(affineMatrix.i2d), cudaMemcpyHostToDevice, stream_));
 
             // 推理
             model_->forward(false);
 
             // 后处理
-            checkCudaRuntime(cudaMemsetAsync(det_array_->gpu<float>(), 0, sizeof(int), stream_));
+            // 这里的 1 + MAX_IMAGE_BBOX 结构是，counter + bboxes ... , 先调整shape再分配GPU内存
+            TRT::Tensor det_array{};
+            det_array.set_stream(stream_);
+            det_array.resize(1, 1 + max_objects_ * num_box_elements_).to_gpu();
+            checkCudaRuntime(cudaMemsetAsync(det_array.gpu<float>(), 0, sizeof(int), stream_));
             decode_box_kernel_invoker(det_out_->gpu<float>(), det_out_->shape(1), num_classes_, confidence_threshold_,
-                                  affineMatrix.d2i, det_array_->gpu<float>(), max_objects_, stream_);
+                                      invert_affine_matrix_device.gpu<float>(), det_array.gpu<float>(), max_objects_, stream_);
 
-            decode_drive_lane_kernel_invoker(drive_seg_->gpu<float>(), drive_array_->gpu<float>(),
-                                    lane_seg_->gpu<float>(), lane_array_->gpu<float>(),
-                                        input_height_, input_width_, stream_);
+            decode_mask_kernel_invoker(drive_seg_->gpu<float>(), lane_seg_->gpu<float>(), pdrive_lane_mat_device,
+                                       input_width_, input_height_, affine_matrix_device.gpu<float>(),
+                                       image.cols, image.rows, stream_);
             model_->synchronize();
-            stream_ = nullptr;
-            det_array_->to_cpu();
-            drive_array_->to_cpu();
-            lane_array_->to_cpu();
+            det_array.to_cpu();
 
-            auto* parray = det_array_->cpu<float>();
+            auto* parray = det_array.cpu<float>();
             int count = min(max_objects_, (int)*parray);
             BoxArray image_based_boxes(count);
             for(int i = 0; i < count; ++i){
@@ -152,14 +165,14 @@ namespace YoloP{
 
             image_based_boxes = cpu_nms(image_based_boxes, nms_threshold_);
 
-//            cv::Mat drive_mask_tmp(input_height_, input_width_, CV_32FC1, drive_array_->cpu<float>());
-//            cv::Mat lane_mask_tmp(input_height_, input_width_, CV_32FC1, drive_array_->cpu<float>());
-//            cv::Mat drive_mask;
-//            cv::Mat lane_mask;
-//            cv::Mat m2x3_d2i = affineMatrix.d2i_mat();  // dst to image, 2x3 matrix
-//            cv::warpAffine(drive_mask_tmp, drive_mask, m2x3_d2i, image.size(),
-//                           cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar::all(0));
+            checkCudaRuntime(cudaMemcpyAsync(drive_lane_mat.data, pdrive_lane_mat_device, image.cols * image.rows * 3, cudaMemcpyDeviceToHost, stream_));
+            checkCudaRuntime(cudaStreamSynchronize(stream_));
 
+            checkCudaRuntime(cudaFree(pdrive_lane_mat_device));
+            pdrive_lane_mat_device = nullptr;
+            stream_ = nullptr;
+
+            return {image_based_boxes, drive_lane_mat};
         }
 
         bool preprocess(const cv::Mat& image, AffineMatrix& affineMatrix) {
@@ -225,12 +238,8 @@ namespace YoloP{
         shared_ptr<TRT::Tensor> det_out_;
         shared_ptr<TRT::Tensor> drive_seg_;
         shared_ptr<TRT::Tensor> lane_seg_;
-
-        // 这三个 是输出经过 decode 的结果
-        shared_ptr<TRT::Tensor> det_array_;
-        shared_ptr<TRT::Tensor> drive_array_;
-        shared_ptr<TRT::Tensor> lane_array_;
     };
+
 
     shared_ptr<Detector> create_detector(
             const string& engine_file, int gpuid,

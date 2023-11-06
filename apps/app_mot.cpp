@@ -60,7 +60,7 @@ void inference_bytetrack(const string& engine_file, int gpuid, Yolo::Type type, 
                                                                        0.2,  0.2,  1,    0.2}
                                         ).set_max_time_lost(150);
 
-    cv::VideoWriter writer("videos/output.mp4", cv::VideoWriter::fourcc('M', 'P', 'E', 'G'), fps, cv::Size(width, height));
+    cv::VideoWriter writer("videos/res_mot.mp4", cv::VideoWriter::fourcc('M', 'P', 'E', 'G'), fps, cv::Size(width, height));
     auto cond = [](const Yolo::Box& b){return b.label == 0;};
 
     shared_future<vector<Yolo::Box>> prev_fut;

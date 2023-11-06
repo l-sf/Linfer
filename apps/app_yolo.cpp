@@ -99,7 +99,7 @@ void performance(const string& engine_file, int gpuid, Yolo::Type type){
 
 
 void batch_inference(const string& engine_file, int gpuid, Yolo::Type type){
-    auto infer = Yolo::create_infer(engine_file, type, gpuid, 0.3, 0.45);
+    auto infer = Yolo::create_infer(engine_file, type, gpuid, 0.25, 0.45);
     if(infer == nullptr){
         printf("infer is nullptr.\n");
         return;
@@ -145,7 +145,7 @@ void batch_inference(const string& engine_file, int gpuid, Yolo::Type type){
 }
 
 void single_inference(const string& engine_file, int gpuid, Yolo::Type type){
-    auto infer = Yolo::create_infer(engine_file, type, gpuid, 0.3, 0.45);
+    auto infer = Yolo::create_infer(engine_file, type, gpuid, 0.25, 0.45);
     if(infer == nullptr){
         printf("infer is nullptr.\n");
         return;

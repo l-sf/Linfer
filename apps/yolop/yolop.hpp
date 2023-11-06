@@ -25,17 +25,17 @@ namespace YoloP{
     };
 
     using BoxArray = std::vector<Box>;
-    using TBMM = tuple<BoxArray, cv::Mat, cv::Mat>;
+    using PBM = pair<BoxArray, cv::Mat>;
 
 
     class Detector{
     public:
-        virtual shared_ptr<TBMM> detect(const cv::Mat& image) = 0;
+        virtual PBM detect(const cv::Mat& image) = 0;
     };
 
     shared_ptr<Detector> create_detector(
             const string& engine_file, int gpuid = 0,
-            float confidence_threshold=0.25f, float nms_threshold=0.5f,
+            float confidence_threshold=0.25f, float nms_threshold=0.45f,
             int max_objects = 512
     );
 

@@ -1,20 +1,30 @@
 
 #include "trt_common/cuda_tools.hpp"
+#include "trt_common/ilogger.hpp"
 #include "yolop.hpp"
 
 namespace YoloP{
 
     const int NUM_BOX_ELEMENT = 6;    // left, top, right, bottom, confidence, keepflag
+    
     static __device__ void affine_project(const float* matrix, float x, float y, float* ox, float* oy){
         *ox = matrix[0] * x + matrix[1] * y + matrix[2];
         *oy = matrix[3] * x + matrix[4] * y + matrix[5];
+    }
+
+    static __device__ int min(int a, int b){
+        return a < b ? a : b;
+    }
+
+    static __device__ int max(int a, int b){
+        return a < b ? b : a;
     }
 
 
     /// ------------------ 核函数定义 ------------------
 
     static __global__ void decode_box_kernel(float* predict, int num_bboxes, int num_classes, float confidence_threshold,
-                                                float* invert_affine_matrix, float* parray, int max_objects){
+                                             float* invert_affine_matrix, float* parray, int max_objects){
 
         int position = blockDim.x * blockIdx.x + threadIdx.x;
         if (position >= num_bboxes) return;
@@ -53,19 +63,36 @@ namespace YoloP{
         *pout_item++ = 1; // 1 = keep, 0 = ignore
     }
 
-    static __global__ void decode_drive_lane_kernel(float* pred_drive, float* parray_drive,
-                                                    float* pred_lane, float* parray_lane, int area){
+    static __global__ void decode_mask_kernel(float* pred_drive, float* pred_lane, uint8_t* pdst_out,
+                                              int in_width, int in_height, float* affine_matrix,
+                                              int dst_width, int dst_height, int edge){
 
         int position = blockDim.x * blockIdx.x + threadIdx.x;
-        if (position >= area) return;
+        if (position >= edge) return;
 
-        float* pitem = pred_drive + position;
-        float* pout_item = parray_drive + position;
-        *pout_item = *pitem < *(pitem + area) ? 1 : 0;
+        int dx = position % dst_width;
+        int dy = position / dst_width;
 
-        pitem = pred_lane + position;
-        pout_item = parray_lane + position;
-        *pout_item = *pitem < *(pitem + area) ? 1 : 0;
+        // 映射
+        float src_x, src_y;
+        affine_project(affine_matrix, dx, dy, &src_x, &src_y);
+        // 边界判断
+        int y = min(max(round(src_y), 0), dst_height);
+        int x = min(max(round(src_x), 0), dst_width);
+
+        // 生成mask
+        int area = in_width * in_height;
+        uint8_t* pdst = pdst_out + dy * dst_width * 3 + dx * 3;
+        if(pred_drive[y * in_width + x] < pred_drive[area + y * in_width + x]){
+            pdst[0] = 0;
+            pdst[1] = 255;
+            pdst[2] = 0;
+        }
+        if(pred_lane[y * in_width + x] < pred_lane[area + y * in_width + x]){
+            pdst[0] = 255;
+            pdst[1] = 0;
+            pdst[2] = 0;
+        }
     }
 
 
@@ -82,13 +109,14 @@ namespace YoloP{
 
     }
 
-    void decode_drive_lane_kernel_invoker(float* pred_drive, float* parray_drive,
-                                          float* pred_lane, float* parray_lane,
-                                          int height, int width, cudaStream_t stream){
-        int area = height * width;
-        auto grid = CUDATools::grid_dims(area);
-        auto block = CUDATools::block_dims(area);
-        checkCudaKernel(decode_drive_lane_kernel<<<grid, block, 0, stream>>>(
-                            pred_drive, parray_drive, pred_lane, parray_lane, area));
+    void decode_mask_kernel_invoker(float* pred_drive, float* pred_lane, uint8_t* pdst_out,
+                                          int in_width, int in_height, float* affine_matrix,
+                                          int dst_width, int dst_height, cudaStream_t stream){
+        int jobs = dst_width * dst_height;
+        auto grid = CUDATools::grid_dims(jobs);
+        auto block = CUDATools::block_dims(jobs);
+        checkCudaKernel(decode_mask_kernel<<<grid, block, 0, stream>>>(
+                            pred_drive, pred_lane, pdst_out, in_width, in_height,
+                            affine_matrix, dst_width, dst_height, jobs));
     }
-};
+}
