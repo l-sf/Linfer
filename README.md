@@ -91,11 +91,11 @@ auto boxes = infer->commit(image).get();
 |   yolov7   |   int8    |  640x640   |   49.55   |   50.42   |
 |  yolov8_n  |   fp16    |  640x640   |  121.94   |  130.16   |
 |  yolov8_s  |   fp16    |  640x640   |   81.40   |   84.74   |
-|  yolov8_l  |   fp16    |  640x640   |    13     |    tbd    |
-| rtdetr_r50 |   fp16    |  640x640   |    12     |    tbd    |
-| lighttrack |   fp16    |  256x256   |    100    |    tbd    |
-|  ostrack   |   fp16    |  256x256   |   33.3    |    tbd    |
-|   yolop    |   fp16    |  640x640   |           |           |
+|  yolov8_l  |   fp16    |  640x640   |    13     |     -     |
+| rtdetr_r50 |   fp16    |  640x640   |    12     |     -     |
+| lighttrack |   fp16    |  256x256   |   90.91   |     -     |
+|  ostrack   |   fp16    |  256x256   |   37.04   |     -     |
+|   yolop    |   fp16    |  640x640   |   31.4    |     -     |
 
 
 
