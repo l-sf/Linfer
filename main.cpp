@@ -13,7 +13,6 @@ void single_inference(const string& engine_file, int gpuid, Yolo::Type type);
 void inference_bytetrack(const string& engine_file, int gpuid, Yolo::Type type, const string& video_file);
 void infer_track(int Mode, const string& path);
 void inference_yolop(const string& engine_file, int gpuid);
-void infer_video_yolop(const string& engine_file, int gpuid);
 void performance_yolop(const string& engine_file, int gpuid);
 bool test_ptq();
 
@@ -55,8 +54,7 @@ void test_track(){
 }
 
 void test_yolop(){
-//    inference_yolop("yolop-640.trt", 0);
-    infer_video_yolop("yolop-640.trt", 0);
+    inference_yolop("yolop-640.trt", 0);
 //    performance_yolop("yolop-640.trt", 0);
 }
 

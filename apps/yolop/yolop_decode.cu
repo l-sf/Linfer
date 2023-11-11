@@ -5,7 +5,7 @@
 
 namespace YoloP{
 
-    const int NUM_BOX_ELEMENT = 6;    // left, top, right, bottom, confidence, keepflag
+    const int NUM_BOX_ELEMENT = 5;    // left, top, right, bottom, confidence
     
     static __device__ void affine_project(const float* matrix, float x, float y, float* ox, float* oy){
         *ox = matrix[0] * x + matrix[1] * y + matrix[2];
@@ -60,10 +60,10 @@ namespace YoloP{
         *pout_item++ = right;
         *pout_item++ = bottom;
         *pout_item++ = confidence;
-        *pout_item++ = 1; // 1 = keep, 0 = ignore
     }
 
-    static __global__ void decode_mask_kernel(float* pred_drive, float* pred_lane, uint8_t* pdst_out,
+    static __global__ void decode_mask_kernel(float* pred_drive, float* pred_lane,
+                                              uint8_t* pimage_out, uint8_t* pdrive_mask_out, uint8_t* plane_mask_out,
                                               int in_width, int in_height, float* affine_matrix,
                                               int dst_width, int dst_height, int edge){
 
@@ -82,16 +82,18 @@ namespace YoloP{
 
         // 生成mask
         int area = in_width * in_height;
-        uint8_t* pdst = pdst_out + dy * dst_width * 3 + dx * 3;
+        uint8_t* pdst = pimage_out + dy * dst_width * 3 + dx * 3;
         if(pred_drive[y * in_width + x] < pred_drive[area + y * in_width + x]){
             pdst[0] = 0;
             pdst[1] = 255;
             pdst[2] = 0;
+            pdrive_mask_out[dy * dst_width + dx] = 255;
         }
         if(pred_lane[y * in_width + x] < pred_lane[area + y * in_width + x]){
             pdst[0] = 255;
             pdst[1] = 0;
             pdst[2] = 0;
+            plane_mask_out[dy * dst_width + dx] = 255;
         }
     }
 
@@ -109,14 +111,15 @@ namespace YoloP{
 
     }
 
-    void decode_mask_kernel_invoker(float* pred_drive, float* pred_lane, uint8_t* pdst_out,
-                                          int in_width, int in_height, float* affine_matrix,
-                                          int dst_width, int dst_height, cudaStream_t stream){
+    void decode_mask_kernel_invoker(float* pred_drive, float* pred_lane,
+                                    uint8_t* pimage_out, uint8_t* pdrive_mask_out, uint8_t* plane_mask_out,
+                                    int in_width, int in_height, float* affine_matrix,
+                                    int dst_width, int dst_height, cudaStream_t stream){
         int jobs = dst_width * dst_height;
         auto grid = CUDATools::grid_dims(jobs);
         auto block = CUDATools::block_dims(jobs);
         checkCudaKernel(decode_mask_kernel<<<grid, block, 0, stream>>>(
-                            pred_drive, pred_lane, pdst_out, in_width, in_height,
-                            affine_matrix, dst_width, dst_height, jobs));
+                            pred_drive, pred_lane, pimage_out, pdrive_mask_out, plane_mask_out,
+                            in_width, in_height, affine_matrix, dst_width, dst_height, jobs));
     }
 }
