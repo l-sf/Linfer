@@ -123,12 +123,21 @@ namespace TRT {
         std::shared_ptr<Tensor> tensor(const std::string& name) override;
         void set_input(int index, std::shared_ptr<Tensor> tensor) override;
         void set_output(int index, std::shared_ptr<Tensor> tensor) override;
+        bool has_dynamic_dim() override;
+        std::vector<int> run_dims(const std::string &name) override;
+        std::vector<int> run_dims(int ibinding) override;
+        std::vector<int> static_dims(const std::string &name) override;
+        std::vector<int> static_dims(int ibinding) override;
+        bool set_run_dims(const std::string &name, const std::vector<int> &dims) override;
+        bool set_run_dims(int ibinding, const std::vector<int> &dims) override;
+        int num_bindings() override;
+        int num_input() override;
+        int num_output() override;
         std::string get_input_name(int index) override;
         std::string get_output_name(int index) override;
         bool is_input_name(const std::string& name) override;
         bool is_output_name(const std::string& name) override;
-        int num_input() override;
-        int num_output() override;
+        bool is_input(int ibinding) override;
         void print() override;
         void set_stream(CUStream stream) override;
         CUStream get_stream() override;
@@ -147,17 +156,20 @@ namespace TRT {
         vector<string> inputs_names_;
         vector<string> outputs_names_;
         // 以下的index都是在整个输入输出的全局index
-        vector<int> inputs_map_to_ordered_index_; // 输入的index
-        vector<int> outputs_map_to_ordered_index_; // 输出的index
+        vector<int> inputs_index_; // 输入的index
+        vector<int> outputs_index_; // 输出的index
         vector<shared_ptr<Tensor>> ordered_Blobs_; // 排序的全部输入和输出Tensor
-        map<string, int> blobs_name_mapper_; // 输入输出的名字到index的映射
+        map<string, int> Blobs_name_mapper_; // 输入输出的名字到index的映射
+        vector<string> Blobs_index_mapper; // 输入输出的index到name的映射
         unique_ptr<EngineContext> context_; // 指向包含runtime、engine、execution_context的对象的独占指针
         vector<void*> bindings_ptr_; // 存放输入输出的GPU内存地址的指针，用来传给enqueueV2函数
         shared_ptr<MixMemory> workspace_; // 所有输入输出Tensor共有的workspace，主要用来存仿射变换的矩阵
         int device_id_ = 0;
     };
 
-    /////////////////////////////////////////////////////////////////////////
+
+    //////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////
 
     InferImpl::~InferImpl() {
         destroy();
@@ -168,7 +180,8 @@ namespace TRT {
         checkCudaRuntime(cudaGetDevice(&old_device));
         checkCudaRuntime(cudaSetDevice(device_id_));
         context_.reset();
-        blobs_name_mapper_.clear();
+        Blobs_name_mapper_.clear();
+        Blobs_index_mapper.clear();
         outputs_.clear();
         inputs_.clear();
         outputs_names_.clear();
@@ -194,7 +207,6 @@ namespace TRT {
     }
 
     void InferImpl::build_engine_input_and_output_mapper() {
-//        auto* context = (EngineContext*)this->context_.get();
         int nbBindings = context_->engine_->getNbBindings();
 
         inputs_.clear();
@@ -203,52 +215,33 @@ namespace TRT {
         outputs_names_.clear();
         ordered_Blobs_.clear();
         bindings_ptr_.clear();
-        blobs_name_mapper_.clear();
+        Blobs_name_mapper_.clear();
+        Blobs_index_mapper.clear();
 
         for(int i = 0; i < nbBindings; ++i){
             auto dims = context_->engine_->getBindingDimensions(i);
             const char* bindingName = context_->engine_->getBindingName(i);
-            if(dims.nbDims == 4){
-                dims.d[0] = 1;
-                auto newTensor = make_shared<Tensor>(dims.nbDims, dims.d);
-                newTensor->set_stream(context_->stream_);
-                newTensor->set_workspace(workspace_);
-                if(context_->engine_->bindingIsInput(i)){
-                    // is input
-                    inputs_.push_back(newTensor);
-                    inputs_names_.emplace_back(bindingName);
-                    inputs_map_to_ordered_index_.push_back(ordered_Blobs_.size());
-                }
-                else{
-                    // is output
-                    outputs_.push_back(newTensor);
-                    outputs_names_.emplace_back(bindingName);
-                    outputs_map_to_ordered_index_.push_back(ordered_Blobs_.size());
-                }
-                blobs_name_mapper_[bindingName] = i;
-                ordered_Blobs_.push_back(newTensor);
+            // 如果 shape:(N,C,H,W) 的 batch维度是动态，先设置为1
+            if(dims.nbDims == 4) dims.d[0] = 1;
+            auto newTensor = make_shared<Tensor>(dims.nbDims, dims.d);
+            newTensor->set_stream(context_->stream_);
+            newTensor->set_workspace(workspace_);
+            if(context_->engine_->bindingIsInput(i)){
+                // input
+                inputs_.push_back(newTensor);
+                inputs_names_.emplace_back(bindingName);
+                inputs_index_.push_back(ordered_Blobs_.size());
             }
             else{
-                auto newTensor = make_shared<Tensor>(dims.nbDims, dims.d);
-                newTensor->set_stream(context_->stream_);
-                newTensor->set_workspace(workspace_);
-                if(context_->engine_->bindingIsInput(i)){
-                    // is input
-                    inputs_.push_back(newTensor);
-                    inputs_names_.emplace_back(bindingName);
-                    inputs_map_to_ordered_index_.push_back(ordered_Blobs_.size());
-                }
-                else{
-                    // is output
-                    outputs_.push_back(newTensor);
-                    outputs_names_.emplace_back(bindingName);
-                    outputs_map_to_ordered_index_.push_back(ordered_Blobs_.size());
-                }
-                blobs_name_mapper_[bindingName] = i;
-                ordered_Blobs_.push_back(newTensor);
+                // output
+                outputs_.push_back(newTensor);
+                outputs_names_.emplace_back(bindingName);
+                outputs_index_.push_back(ordered_Blobs_.size());
             }
+            Blobs_name_mapper_[bindingName] = i;
+            Blobs_index_mapper.emplace_back(bindingName);
+            ordered_Blobs_.push_back(newTensor);
         }
-
         bindings_ptr_.resize(ordered_Blobs_.size());
     }
 
@@ -293,8 +286,8 @@ namespace TRT {
     }
 
     std::shared_ptr<Tensor> InferImpl::tensor(const string &name) {
-        auto node = blobs_name_mapper_.find(name);
-        if(node == blobs_name_mapper_.end())
+        auto node = Blobs_name_mapper_.find(name);
+        if(node == Blobs_name_mapper_.end())
             INFOF("Could not find the input/output node '%s', please check your model.", name.c_str());
         return ordered_Blobs_[node->second];
     }
@@ -304,7 +297,7 @@ namespace TRT {
             INFOF("Input index[%d] out of range [size=%d]", index, inputs_.size());
         }
         inputs_[index] = tensor;
-        int order_index = inputs_map_to_ordered_index_[index];
+        int order_index = inputs_index_[index];
         ordered_Blobs_[order_index] = tensor;
     }
 
@@ -313,8 +306,62 @@ namespace TRT {
             INFOF("Output index[%d] out of range [size=%d]", index, outputs_.size());
         }
         outputs_[index] = tensor;
-        int order_index = outputs_map_to_ordered_index_[index];
+        int order_index = outputs_index_[index];
         ordered_Blobs_[order_index] = tensor;
+    }
+
+    bool InferImpl::has_dynamic_dim() {
+        // check if any input or output bindings have dynamic shapes
+        // code from ChatGPT
+        int numBindings = this->context_->engine_->getNbBindings();
+        for (int i = 0; i < numBindings; ++i) {
+            nvinfer1::Dims dims = this->context_->engine_->getBindingDimensions(i);
+            for (int j = 0; j < dims.nbDims; ++j) {
+                if (dims.d[j] == -1) return true;
+            }
+        }
+        return false;
+    }
+
+    std::vector<int> InferImpl::run_dims(const std::string &name)  {
+        return run_dims(Blobs_name_mapper_[name]);
+    }
+
+    std::vector<int> InferImpl::run_dims(int ibinding)  {
+        auto dim = this->context_->exec_context_->getBindingDimensions(ibinding);
+        return {dim.d, dim.d + dim.nbDims};
+    }
+
+    std::vector<int> InferImpl::static_dims(const std::string &name)  {
+        return static_dims(Blobs_name_mapper_[name]);
+    }
+
+    std::vector<int> InferImpl::static_dims(int ibinding)  {
+        auto dim = this->context_->engine_->getBindingDimensions(ibinding);
+        return {dim.d, dim.d + dim.nbDims};
+    }
+
+    bool InferImpl::set_run_dims(const std::string &name, const std::vector<int> &dims) {
+        return this->set_run_dims(Blobs_name_mapper_[name], dims);
+    }
+
+    bool InferImpl::set_run_dims(int ibinding, const std::vector<int> &dims) {
+        Dims d;
+        memcpy(d.d, dims.data(), sizeof(int) * dims.size());
+        d.nbDims = dims.size();
+        return this->context_->exec_context_->setBindingDimensions(ibinding, d);
+    }
+
+    int InferImpl::num_bindings() {
+        return this->context_->engine_->getNbBindings();
+    }
+
+    int InferImpl::num_input() {
+        return inputs_.size();
+    }
+
+    int InferImpl::num_output() {
+        return outputs_.size();
     }
 
     std::string InferImpl::get_input_name(int index) {
@@ -337,12 +384,8 @@ namespace TRT {
         return find(outputs_names_.begin(), outputs_names_.end(), name) != outputs_names_.end();
     }
 
-    int InferImpl::num_input() {
-        return inputs_.size();
-    }
-
-    int InferImpl::num_output() {
-        return outputs_.size();
+    bool InferImpl::is_input(int ibinding) {
+        return this->context_->engine_->bindingIsInput(ibinding);
     }
 
     void InferImpl::print() {
@@ -392,7 +435,6 @@ namespace TRT {
     }
 
     size_t InferImpl::get_device_memory_size() {
-//        auto* context = (EngineContext*)this->context_.get();
         return context_->exec_context_->getEngine().getDeviceMemorySize();
     }
 
