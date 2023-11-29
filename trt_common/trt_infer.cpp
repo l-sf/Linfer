@@ -249,7 +249,7 @@ namespace TRT {
         int inputBatchSize = inputs_[0]->shape(0);
 
         for(int i = 0; i < context_->engine_->getNbBindings(); ++i){
-            auto dims = context_->engine_->getBindingDimensions(i);
+            auto dims = context_->exec_context_->getBindingDimensions(i);
             if(dims.nbDims == 4) dims.d[0] = inputBatchSize;
             if(context_->engine_->bindingIsInput(i))
                 context_->exec_context_->setBindingDimensions(i, dims);
