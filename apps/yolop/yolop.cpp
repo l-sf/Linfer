@@ -10,17 +10,29 @@ namespace YoloP{
 
     using namespace std;
 
+    const char* type_name(Type type){
+        switch(type){
+            case Type::V1: return "YoloPv1";
+            case Type::V2: return "YoloPv2";
+            default: return "Unknow";
+        }
+    }
+
     void decode_box_kernel_invoker(
             float* predict, int num_bboxes, int num_classes, float confidence_threshold,
             float* invert_affine_matrix, float* parray,
             int max_objects, cudaStream_t stream
     );
 
+    void nms_kernel_invoker(
+            float* parray, float nms_threshold, int max_objects, cudaStream_t stream
+    );
+
     void decode_mask_kernel_invoker(
             float* pred_drive, float* pred_lane,
             uint8_t* pimage_out, uint8_t* pdrive_mask_out, uint8_t* plane_mask_out,
             int in_width, int in_height, float* affine_matrix,
-            int dst_width, int dst_height, cudaStream_t stream
+            int dst_width, int dst_height, Type type, cudaStream_t stream
     );
 
     struct AffineMatrix{
@@ -80,13 +92,18 @@ namespace YoloP{
     public:
         ~DetectorImpl() = default;
 
-        bool startup(const string& file, int gpuid, float confidence_threshold,
-                     float nms_threshold, int max_objects
+        bool startup(const string& file, Type type, int gpuid,
+                     float confidence_threshold, float nms_threshold,
+                     NMSMethod nms_method, int max_objects
         ){
             normalize_ = CUDAKernel::Norm::alpha_beta(1 / 255.f, 0.f, CUDAKernel::ChannelType::Invert);
             confidence_threshold_ = confidence_threshold;
             nms_threshold_        = nms_threshold;
             max_objects_          = max_objects;
+            nms_method_           = nms_method;
+            type_                 = type;
+            if(type_ == Type::V2) num_classes_ = 80;
+            else num_classes_ = 1;
 
             TRT::set_device(gpuid);
             model_ = TRT::load_infer(file);
@@ -99,9 +116,17 @@ namespace YoloP{
 
             // 绑定输入输出
             input_ = model_->input();
-            det_out_ = model_->output(0);
-            drive_seg_ = model_->output(1);
-            lane_seg_ = model_->output(2);
+            if(type_ == Type::V2){
+                det_out_ = model_->output(2);
+                drive_seg_ = model_->output(0);
+                lane_seg_ = model_->output(1);
+            }
+            else{
+                det_out_ = model_->output(0);
+                drive_seg_ = model_->output(1);
+                lane_seg_ = model_->output(2);
+            }
+
             input_width_  = input_->shape(3);
             input_height_ = input_->shape(2);
             stream_       = model_->get_stream();
@@ -126,11 +151,17 @@ namespace YoloP{
         }
 
         PTMM detect(const cv::Mat& image) override{
+            /**
+             * 此函数作用：
+             * 1、输出目标检测框；
+             * 2、在输入image上进行drive和lane的涂色，方便可视化；
+             * 3、输出drive和lane两个mask(cv::Mat类型)，方便后续任务(Planning or Mapping)使用。
+             */
+
             // 预处理
             AffineMatrix affineMatrix{};
             preprocess(image, affineMatrix);
 
-            // 在输入image上涂色，再把drive和lane两个mask输出
             // 先开辟GPU内存，再赋初始值
             uint8_t* pdrive_lane_mat_device = nullptr;
             checkCudaRuntime(cudaMallocAsync(&pdrive_lane_mat_device, image.cols * image.rows * 3, stream_));
@@ -155,11 +186,14 @@ namespace YoloP{
             checkCudaRuntime(cudaMemsetAsync(det_array_->gpu<float>(), 0, sizeof(int), stream_));
             decode_box_kernel_invoker(det_out_->gpu<float>(), det_out_->shape(1), num_classes_, confidence_threshold_,
                                       invert_affine_matrix_device_->gpu<float>(), det_array_->gpu<float>(), max_objects_, stream_);
+            if(nms_method_ == NMSMethod::CUDA){
+                nms_kernel_invoker(det_array_->gpu<float>(), nms_threshold_, max_objects_, stream_);
+            }
 
             decode_mask_kernel_invoker(drive_seg_->gpu<float>(), lane_seg_->gpu<float>(),
                                        pdrive_lane_mat_device, pdrive_mask_mat_device, plane_mask_mat_device,
                                        input_width_, input_height_, affine_matrix_device_->gpu<float>(),
-                                       image.cols, image.rows, stream_);
+                                       image.cols, image.rows, type_, stream_);
             model_->synchronize();
             det_array_->to_cpu();
 
@@ -168,11 +202,17 @@ namespace YoloP{
             BoxArray image_based_boxes(count);
             for(int i = 0; i < count; ++i){
                 float* pbox  = parray + 1 + i * num_box_elements_;
-                image_based_boxes.emplace_back(pbox[0], pbox[1], pbox[2], pbox[3], pbox[4]);
+                int label    = pbox[5];
+                int keepflag = pbox[6];
+                if(keepflag == 1) {
+                    image_based_boxes.emplace_back(pbox[0], pbox[1], pbox[2], pbox[3], pbox[4], label);
+                }
+            }
+            if(nms_method_ == NMSMethod::CPU){
+                image_based_boxes = cpu_nms(image_based_boxes, nms_threshold_);
             }
 
-            image_based_boxes = cpu_nms(image_based_boxes, nms_threshold_);
-
+            // 将 3张图 拷贝回 Host memory
             checkCudaRuntime(cudaMemcpyAsync(image.data, pdrive_lane_mat_device, image.cols * image.rows * 3, cudaMemcpyDeviceToHost, stream_));
             checkCudaRuntime(cudaMemcpyAsync(drive_mask_mat.data, pdrive_mask_mat_device, image.cols * image.rows, cudaMemcpyDeviceToHost, stream_));
             checkCudaRuntime(cudaMemcpyAsync(lane_mask_mat.data, plane_mask_mat_device, image.cols * image.rows, cudaMemcpyDeviceToHost, stream_));
@@ -187,6 +227,7 @@ namespace YoloP{
             plane_mask_mat_device = nullptr;
             stream_ = nullptr;
 
+            // 输出box，2张mask图(cv::Mat)
             return {image_based_boxes, drive_mask_mat, lane_mask_mat};
         }
 
@@ -212,7 +253,7 @@ namespace YoloP{
             size_t size_matrix = iLogger::upbound(sizeof(affineMatrix.d2i), 32);
             auto workspace = tensor->get_workspace();
             auto* gpu_workspace           = (uint8_t*)workspace->gpu(size_matrix + size_image);
-            auto*   affine_matrix_device  = (float*)gpu_workspace;
+            auto* affine_matrix_device    = (float*)gpu_workspace;
             uint8_t* image_device         = size_matrix + gpu_workspace;
 
             auto* cpu_workspace           = (uint8_t*)workspace->cpu(size_matrix + size_image);
@@ -241,9 +282,11 @@ namespace YoloP{
         int gpu_                    = 0;
         float confidence_threshold_ = 0;
         float nms_threshold_        = 0;
-        int num_classes_            = 1;
-        int max_objects_            = 256;
-        int num_box_elements_       = 5;  // left, top, right, bottom, confidence
+        int num_classes_            = 0;
+        int max_objects_            = 512;
+        int num_box_elements_       = 7;  // left, top, right, bottom, confidence, label, keepflag
+        NMSMethod nms_method_       = NMSMethod::CUDA;
+        Type type_;
 
         TRT::CUStream stream_       = nullptr;
         CUDAKernel::Norm normalize_;
@@ -256,16 +299,18 @@ namespace YoloP{
 
         shared_ptr<TRT::Tensor> affine_matrix_device_;
         shared_ptr<TRT::Tensor> invert_affine_matrix_device_;
-        shared_ptr<TRT::Tensor> det_array_;
+        shared_ptr<TRT::Tensor> det_array_;  // 存放解码后的检测结果
     };
 
 
     shared_ptr<Detector> create_detector(
-            const string& engine_file, int gpuid,
-            float confidence_threshold, float nms_threshold, int max_objects
+            const string& engine_file, Type type, int gpuid,
+            float confidence_threshold, float nms_threshold,
+            NMSMethod nms_method, int max_objects
     ){
         shared_ptr<DetectorImpl> instance(new DetectorImpl{});
-        if(!instance->startup(engine_file, gpuid, confidence_threshold, nms_threshold, max_objects)){
+        if(!instance->startup(engine_file, type, gpuid, confidence_threshold,
+                              nms_threshold, nms_method, max_objects)){
             instance.reset();
         }
         return instance;

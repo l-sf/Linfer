@@ -11,23 +11,6 @@ trtexec --onnx=./onnx_models/yolov5s.onnx \
 		--fp16
 
 echo ""
-trtexec --onnx=./onnx_models/yolov5s_ptq.onnx \
-		--saveEngine=./yolov5s_ptq.trt \
-		--buildOnly \
-		--minShapes=images:1x3x640x640 \
-		--optShapes=images:1x3x640x640 \
-		--maxShapes=images:8x3x640x640 \
-		--int8
-
-echo ""
-trtexec --onnx=./onnx_models/yolov5s_qat.onnx \
-		--saveEngine=./yolov5s_qat.trt \
-		--buildOnly \
-		--minShapes=images:1x3x640x640 \
-		--optShapes=images:1x3x640x640 \
-		--maxShapes=images:8x3x640x640 \
-		--int8
-
 trtexec --onnx=./onnx_models/yolov5m.onnx \
 		--saveEngine=./yolov5m.trt \
 		--buildOnly \
@@ -35,15 +18,6 @@ trtexec --onnx=./onnx_models/yolov5m.onnx \
 		--optShapes=images:1x3x640x640 \
 		--maxShapes=images:8x3x640x640 \
 		--fp16
-
-echo ""
-trtexec --onnx=./onnx_models/yolov5m_ptq.onnx \
-		--saveEngine=./yolov5m_ptq.trt \
-		--buildOnly \
-		--minShapes=images:1x3x640x640 \
-		--optShapes=images:1x3x640x640 \
-		--maxShapes=images:8x3x640x640 \
-		--int8
 
 
 echo ""
@@ -132,7 +106,7 @@ trtexec --onnx=./onnx_models/yolov8l.onnx \
 
 echo ""
 echo ""
-echo "************************ compile rtdetr models ***************************"
+echo "************************ compile RT-DETR models ***************************"
 echo ""
 trtexec --onnx=./onnx_models/rtdetr_r50vd_6x_coco_dynamic.onnx \
 		--saveEngine=./rtdetr_r50vd_6x_coco_dynamic_fp16.trt \
@@ -148,30 +122,15 @@ echo ""
 echo "************************ compile LightTrack models ***************************"
 echo ""
 trtexec --onnx=./onnx_models/lighttrack-z.onnx \
-		    --saveEngine=./lighttrack-z.trt \
-		    --buildOnly \
-		    --fp16
+		--saveEngine=./lighttrack-z.trt \
+		--buildOnly \
+		--fp16
 
 echo ""
 trtexec --onnx=./onnx_models/lighttrack-x-head.onnx \
-		    --saveEngine=./lighttrack-x-head.trt \
-		    --buildOnly \
-		    --fp16
-
-echo ""
-echo ""
-echo "************************ compile StarkLightning models ***************************"
-echo ""
-trtexec --onnx=./onnx_models/starklight-z.onnx \
-		    --saveEngine=./starklight-z.trt \
-		    --buildOnly \
-		    --fp16
-
-echo ""
-trtexec --onnx=./onnx_models/starklight-x-head.onnx \
-		    --saveEngine=./starklight-x-head.trt \
-		    --buildOnly \
-		    --fp16
+		--saveEngine=./lighttrack-x-head.trt \
+		--buildOnly \
+		--fp16
 
 
 echo ""
@@ -179,22 +138,29 @@ echo ""
 echo "************************ compile OSTrack models ***************************"
 echo ""
 trtexec --onnx=./onnx_models/ostrack-256.onnx \
-		    --saveEngine=./ostrack-256.trt \
-		    --buildOnly \
-		    --fp16
+		--saveEngine=./ostrack-256.trt \
+		--buildOnly \
+		--fp16
 
 echo ""
 trtexec --onnx=./onnx_models/ostrack-384-ce.onnx \
-		    --saveEngine=./ostrack-384-ce.trt \
-		    --buildOnly \
-		    --fp16
+		--saveEngine=./ostrack-384-ce.trt \
+		--buildOnly \
+		--fp16
 
 
 echo ""
 echo ""
-echo "************************ compile yolop model ***************************"
+echo "************************ compile YoloP model ***************************"
 echo ""
 trtexec --onnx=./onnx_models/yolop-640.onnx \
 		--saveEngine=./yolop-640.trt \
 		--buildOnly \
 		--fp16
+
+echo ""
+trtexec --onnx=./onnx_models/yolopv2-480x640.onnx \
+		--saveEngine=./yolopv2-480x640.trt \
+		--buildOnly \
+		--fp16
+

@@ -17,16 +17,27 @@ namespace YoloP{
 
     struct Box{
         float left, top, right, bottom, confidence;
+        int label;
 
         Box() = default;
 
-        Box(float left, float top, float right, float bottom, float confidence)
-                :left(left), top(top), right(right), bottom(bottom), confidence(confidence){}
+        Box(float left, float top, float right, float bottom, float confidence, int label)
+                :left(left), top(top), right(right), bottom(bottom), confidence(confidence), label(label){}
     };
 
     using BoxArray = std::vector<Box>;
+    // detect函数的返回值类型
     using PTMM = std::tuple<BoxArray, cv::Mat, cv::Mat>;
 
+    enum class Type : int{
+        V1 = 0,
+        V2 = 1,
+    };
+
+    enum class NMSMethod : int{
+        CPU = 0,
+        CUDA = 1
+    };
 
     class Detector{
     public:
@@ -34,9 +45,9 @@ namespace YoloP{
     };
 
     shared_ptr<Detector> create_detector(
-            const string& engine_file, int gpuid = 0,
-            float confidence_threshold=0.3f, float nms_threshold=0.45f,
-            int max_objects = 256
+            const string& engine_file, Type type, int gpuid = 0,
+            float confidence_threshold=0.4f, float nms_threshold=0.5f,
+            NMSMethod nms_method = NMSMethod::CUDA, int max_objects = 512
     );
 
 } // namespace YoloP

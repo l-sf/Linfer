@@ -1,6 +1,7 @@
 
 #include <opencv2/opencv.hpp>
 #include "apps/yolo/yolo.hpp"
+#include "apps/yolop/yolop.hpp"
 
 using namespace std;
 
@@ -12,8 +13,8 @@ void batch_inference(const string& engine_file, int gpuid, Yolo::Type type);
 void single_inference(const string& engine_file, int gpuid, Yolo::Type type);
 void inference_bytetrack(const string& engine_file, int gpuid, Yolo::Type type, const string& video_file);
 void infer_track(int Mode, const string& path);
-void inference_yolop(const string& engine_file, int gpuid);
-void performance_yolop(const string& engine_file, int gpuid);
+void inference_yolop(const string& engine_file, YoloP::Type type, int gpuid);
+void performance_yolop(const string& engine_file, YoloP::Type type, int gpuid);
 bool test_ptq();
 
 void test_rtdetr(){
@@ -54,8 +55,10 @@ void test_track(){
 }
 
 void test_yolop(){
-    inference_yolop("yolop-640.trt", 0);
-//    performance_yolop("yolop-640.trt", 0);
+    inference_yolop("yolopv2-480x640.trt", YoloP::Type::V2, 0);
+//    inference_yolop("yolop-640.trt", YoloP::Type::V1, 0);
+//    performance_yolop("yolopv2-480x640.trt", YoloP::Type::V2, 0);
+//    performance_yolop("yolop-640.trt", YoloP::Type::V1, 0);
 }
 
 int main(){

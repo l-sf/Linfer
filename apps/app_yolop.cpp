@@ -5,9 +5,48 @@
 
 using namespace std;
 
+inline vector<string> cocolabels = {
+        "person", "bicycle", "car", "motorcycle", "airplane",
+        "bus", "train", "truck", "boat", "traffic light", "fire hydrant",
+        "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse",
+        "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack",
+        "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis",
+        "snowboard", "sports ball", "kite", "baseball bat", "baseball glove",
+        "skateboard", "surfboard", "tennis racket", "bottle", "wine glass",
+        "cup", "fork", "knife", "spoon", "bowl", "banana", "apple", "sandwich",
+        "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake",
+        "chair", "couch", "potted plant", "bed", "dining table", "toilet", "tv",
+        "laptop", "mouse", "remote", "keyboard", "cell phone", "microwave",
+        "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase",
+        "scissors", "teddy bear", "hair drier", "toothbrush"
+};
 
-void performance_yolop(const string& engine_file, int gpuid){
-    auto detector = YoloP::create_detector(engine_file, gpuid, 0.25, 0.45);
+inline std::tuple<uint8_t, uint8_t, uint8_t> hsv2bgr(float h, float s, float v){
+    const int h_i = static_cast<int>(h * 6);
+    const float f = h * 6 - h_i;
+    const float p = v * (1 - s);
+    const float q = v * (1 - f*s);
+    const float t = v * (1 - (1 - f) * s);
+    float r, g, b;
+    switch (h_i) {
+        case 0:r = v; g = t; b = p;break;
+        case 1:r = q; g = v; b = p;break;
+        case 2:r = p; g = v; b = t;break;
+        case 3:r = p; g = q; b = v;break;
+        case 4:r = t; g = p; b = v;break;
+        case 5:r = v; g = p; b = q;break;
+        default:r = 1; g = 1; b = 1;break;}
+    return make_tuple(static_cast<uint8_t>(b * 255), static_cast<uint8_t>(g * 255), static_cast<uint8_t>(r * 255));
+}
+
+inline std::tuple<uint8_t, uint8_t, uint8_t> random_color(int id){
+    float h_plane = ((((unsigned int)id << 2) ^ 0x937151) % 100) / 100.0f;;
+    float s_plane = ((((unsigned int)id << 3) ^ 0x315793) % 100) / 100.0f;
+    return hsv2bgr(h_plane, s_plane, 1);
+}
+
+void performance_yolop(const string& engine_file, YoloP::Type type, int gpuid){
+    auto detector = YoloP::create_detector(engine_file, type, gpuid, 0.4, 0.5);
     if(detector == nullptr){
         printf("detector is nullptr.\n");
         return;
@@ -33,31 +72,26 @@ void performance_yolop(const string& engine_file, int gpuid){
 }
 
 
-void inference_yolop(const string& engine_file, int gpuid){
-    auto detector = YoloP::create_detector(engine_file, gpuid, 0.3, 0.45);
+void inference_yolop(const string& engine_file, YoloP::Type type, int gpuid){
+    auto detector = YoloP::create_detector(engine_file, type, gpuid, 0.4, 0.5);
     if(detector == nullptr){
         printf("detector is nullptr.\n");
         return;
     }
 
-    auto image = cv::imread("imgs/4.jpg");
+    auto image = cv::imread("imgs/6.jpg");
     auto res = detector->detect(image);
     YoloP::BoxArray& boxes = get<0>(res);
     cv::Mat& drive_mask = get<1>(res);
     cv::Mat& lane_mask = get<2>(res);
 
-    for(auto& ibox : boxes){
-        cv::Scalar color(0, 0, 255);
-        cv::rectangle(image, cv::Point(ibox.left, ibox.top), cv::Point(ibox.right, ibox.bottom), color, 2);
-        string name = "car";
-        auto caption = cv::format("%s %.2f", name.c_str(), ibox.confidence);
-        int text_width = cv::getTextSize(caption, 0, 1, 2, nullptr).width + 10;
-        cv::rectangle(image, cv::Point(ibox.left-2, ibox.top-32), cv::Point(ibox.left + text_width, ibox.top), color, -1);
-        cv::putText(image, caption, cv::Point(ibox.left, ibox.top-5), 0, 1, cv::Scalar::all(0), 2, 16);
-    }
+    for(auto& ibox : boxes)
+        cv::rectangle(image, cv::Point(ibox.left, ibox.top),
+                      cv::Point(ibox.right, ibox.bottom),
+                      {0, 0, 255}, 2);
 
-    cv::imwrite("infer_res/4res.jpg", image);
-    cv::imwrite("infer_res/4drive.jpg", drive_mask);
-    cv::imwrite("infer_res/4lane.jpg", lane_mask);
+    cv::imwrite("infer_res/res.jpg", image);
+    cv::imwrite("infer_res/drive.jpg", drive_mask);
+    cv::imwrite("infer_res/lane.jpg", lane_mask);
 }
 
