@@ -6,11 +6,13 @@
 
 ## Introduction
 
-基于 TensorRT 的 C++ 高性能推理库。
+基于 TensorRT 的 C++ 高性能推理库。（随缘更新，感谢关注）
 
 
 
 ## Update News
+
+🚀（2023.12.03）支持全景驾驶感知算法 YOLOPv2，Better、Faster、Stronger ！
 
 🚀（2023.11.06）支持全景驾驶感知算法 YOLOP ！
 
@@ -26,7 +28,7 @@
 
 ## Highlights
 
-- 支持全景驾驶感知 YOLOP，目标检测 RT-DETR，Yolo 5/X/7/8 ，多目标跟踪 Bytetrack，单目标跟踪 OSTrack、LightTrack；
+- 支持全景驾驶感知 YOLOPv2，目标检测 RT-DETR，Yolo 5/X/7/8 ，多目标跟踪 Bytetrack，单目标跟踪 OSTrack、LightTrack；
 - 预处理和后处理实现CUDA核函数，在 jetson 边缘端也能高性能推理；
 - 封装Tensor、Infer，实现内存复用、CPU/GPU 内存自动拷贝、引擎上下文管理、输入输出绑定等；
 - 推理过程实现生产者消费者模型，实现预处理和推理的并行化，进一步提升性能；
@@ -36,13 +38,35 @@
 
 ## Easy Using
 
-**3 lines of code to implement yolo inference**
+本项目代码结构如下：`apps` 文件夹中存放着各个算法的实现代码，其中 `app_xxx.cpp` 是对应 `xxx` 算法的调用demo函数，每个算法彼此之间没有依赖，加入只需要使用yolopv2，可以将此文件夹下的其他算法全部删除；`quant-tools` 文件夹中是量化脚本，主要是yolov5/7；`trt_common` 文件夹中包括了常用的cuda_tools，对TensorRT进行Tensor、Infer的封装，生产者消费者模型的封装；`workspace` 文件夹中存放编译好的可执行文件、engine等。
 
-```c++
-auto infer = Yolo::create_infer("yolov5s.trt", Yolo::Type::V5, 0); 
-auto image = cv::imread("imgs/bus.jpg");
-auto boxes = infer->commit(image).get();
+使用哪个算法就在 `main.cpp` 中调用哪个算法的demo函数。
+
+```bash
+.
+├── apps
+│   ├── yolo
+│   └── yolop
+│   ├── app_yolo.cpp
+│   ├── app_yolop.cpp
+│   ├── ...
+├── quant-tools
+│   └── ...
+├── trt_common
+│   ├── cuda_tools.cpp
+│   ├── cuda_tools.hpp
+│   ├── trt_infer.cpp
+│   ├── trt_infer.hpp
+│   ├── trt_tensor.cpp
+│   ├── trt_tensor.hpp
+│   └── ...
+├── CMakeLists.txt
+├── main.cpp
+└── workspace
+    └── ...
 ```
+
+如果要进行您自己的算法部署，只需要在 `apps` 文件夹中新建您的算法文件夹，模仿其他算法中对 `trt_infer/trt_tensor` 等的使用即可。
 
 
 
@@ -54,7 +78,7 @@ auto boxes = infer->commit(image).get();
 
 2. compile engine
 
-   1. 下载onnx模型 [google driver](https://drive.google.com/drive/folders/16ZqDaxlWm1aDXQsjsxLS7yFL0YqzHbxT?usp=sharing) 或 按照下面的教程自己导出
+   1. 下载 onnx 模型 [google driver](https://drive.google.com/drive/folders/16ZqDaxlWm1aDXQsjsxLS7yFL0YqzHbxT?usp=sharing) 
 
    2. ```bash
       cd Linfer/workspace
@@ -82,7 +106,7 @@ auto boxes = infer->commit(image).get();
 
 ## Speed Test
 
-在 Jetson Orin Nano 8G 上进行测试，测试包括整个流程（即预处理+推理+后处理）
+在 Jetson Orin Nano 8G 上进行测试，测试包括整个流程（图像预处理+模型推理+后处理解码）
 
 |   Model    | Precision | Resolution | FPS(bs=1) | FPS(bs=4) |
 | :--------: | :-------: | :--------: | :-------: | :-------: |
@@ -95,7 +119,8 @@ auto boxes = infer->commit(image).get();
 | rtdetr_r50 |   fp16    |  640x640   |    12     |     -     |
 | lighttrack |   fp16    |  256x256   |   90.91   |     -     |
 |  ostrack   |   fp16    |  256x256   |   37.04   |     -     |
-|   yolop    |   fp16    |  640x640   |   31.4    |     -     |
+|  yolop_s   |   fp16    |  640x640   |   31.4    |     -     |
+| yolopv2_l  |   fp16    |  480x640   |   21.9    |     -     |
 
 
 
