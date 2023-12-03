@@ -8,6 +8,7 @@
 **/*.so
 **/*.pt
 **/*.pth
+**/*.tar
 **/*.onnx
 **/*.engine
 **/*.trt
