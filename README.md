@@ -6,7 +6,7 @@
 
 ## Introduction
 
-基于 TensorRT 的 C++ 高性能推理库。（随缘更新，感谢关注）
+基于 TensorRT 的 C++ 高性能推理库。
 
 
 
@@ -53,20 +53,17 @@
 ├── quant-tools
 │   └── ...
 ├── trt_common
-│   ├── cuda_tools.cpp
 │   ├── cuda_tools.hpp
-│   ├── trt_infer.cpp
 │   ├── trt_infer.hpp
-│   ├── trt_tensor.cpp
 │   ├── trt_tensor.hpp
 │   └── ...
+├── workspace
+│   └── ...
 ├── CMakeLists.txt
-├── main.cpp
-└── workspace
-    └── ...
+└── main.cpp
 ```
 
-如果要进行您自己的算法部署，只需要在 `apps` 文件夹中新建您的算法文件夹，模仿其他算法中对 `trt_infer/trt_tensor` 等的使用即可。
+如果要进行您自己的算法部署，只需要在 `apps` 文件夹中新建您的算法文件夹，模仿其他算法中对 `trt_infer/trt_tensor` 等的使用即可。后续时间空闲较多的情况下会更新较为详细的用法。
 
 
 
@@ -108,25 +105,24 @@
 
 在 Jetson Orin Nano 8G 上进行测试，测试包括整个流程（图像预处理+模型推理+后处理解码）
 
-|   Model    | Precision | Resolution | FPS(bs=1) | FPS(bs=4) |
-| :--------: | :-------: | :--------: | :-------: | :-------: |
-|  yolov5_s  |   fp16    |  640x640   |   96.06   |   100.9   |
-|  yolox_s   |   fp16    |  640x640   |   79.64   |   85.00   |
-|   yolov7   |   int8    |  640x640   |   49.55   |   50.42   |
-|  yolov8_n  |   fp16    |  640x640   |  121.94   |  130.16   |
-|  yolov8_s  |   fp16    |  640x640   |   81.40   |   84.74   |
-|  yolov8_l  |   fp16    |  640x640   |    13     |     -     |
-| rtdetr_r50 |   fp16    |  640x640   |    12     |     -     |
-| lighttrack |   fp16    |  256x256   |   90.91   |     -     |
-|  ostrack   |   fp16    |  256x256   |   37.04   |     -     |
-|  yolop_s   |   fp16    |  640x640   |   31.4    |     -     |
-| yolopv2_l  |   fp16    |  480x640   |   21.9    |     -     |
+|   Model    | Precision | Resolution | FPS(bs=1) |
+| :--------: | :-------: | :--------: | :-------: |
+|  yolov5_s  |   fp16    |  640x640   |   96.06   |
+|  yolox_s   |   fp16    |  640x640   |   79.64   |
+|   yolov7   | **int8**  |  640x640   |   49.55   |
+|  yolov8_n  |   fp16    |  640x640   |  121.94   |
+|  yolov8_s  |   fp16    |  640x640   |   81.40   |
+|  yolov8_l  |   fp16    |  640x640   |    13     |
+| rtdetr_r50 |   fp16    |  640x640   |    12     |
+| lighttrack |   fp16    |  256x256   |   90.91   |
+|  ostrack   |   fp16    |  256x256   |   37.04   |
+|   yolop    |   fp16    |  640x640   |   31.4    |
+|  yolopv2   |   fp16    |  480x640   |   21.9    |
 
 
 
 ## Reference
 
 - [tensorRT_Pro](https://github.com/shouxieai/tensorRT_Pro.git) 
-- [infer](https://github.com/shouxieai/infer.git) 
 - [Video：详解TensorRT的C++/Python高性能部署，实战应用到项目](https://www.bilibili.com/video/BV1Xw411f7FW/?share_source=copy_web&vd_source=4bb05d1ac6ff39b7680900de14419dca) 
 
