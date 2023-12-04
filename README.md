@@ -38,7 +38,7 @@
 
 ## Easy Using
 
-本项目代码结构如下：`apps` 文件夹中存放着各个算法的实现代码，其中 `app_xxx.cpp` 是对应 `xxx` 算法的调用demo函数，每个算法彼此之间没有依赖，加入只需要使用yolopv2，可以将此文件夹下的其他算法全部删除；`quant-tools` 文件夹中是量化脚本，主要是yolov5/7；`trt_common` 文件夹中包括了常用的cuda_tools，对TensorRT进行Tensor、Infer的封装，生产者消费者模型的封装；`workspace` 文件夹中存放编译好的可执行文件、engine等。
+本项目代码结构如下：`apps` 文件夹中存放着各个算法的实现代码，其中 `app_xxx.cpp` 是对应 `xxx` 算法的调用demo函数，每个算法彼此之间没有依赖，假如只需要使用yolopv2，可以将此文件夹下的其他算法全部删除，没有影响；`quant-tools` 文件夹中是量化脚本，主要是yolov5/7；`trt_common` 文件夹中包括了常用的cuda_tools，对TensorRT进行Tensor、Infer的封装，生产者消费者模型的封装；`workspace` 文件夹中存放编译好的可执行文件、engine等。
 
 使用哪个算法就在 `main.cpp` 中调用哪个算法的demo函数。
 
@@ -50,12 +50,12 @@
 │   ├── app_yolo.cpp
 │   ├── app_yolop.cpp
 │   ├── ...
-├── quant-tools
-│   └── ...
 ├── trt_common
 │   ├── cuda_tools.hpp
 │   ├── trt_infer.hpp
 │   ├── trt_tensor.hpp
+│   └── ...
+├── quant-tools
 │   └── ...
 ├── workspace
 │   └── ...
