@@ -222,7 +222,7 @@ namespace TRT {
             auto dims = context_->engine_->getBindingDimensions(i);
             const char* bindingName = context_->engine_->getBindingName(i);
             // 如果 shape:(N,C,H,W) 的 batch维度是动态，先设置为1
-            if(dims.nbDims == 4) dims.d[0] = 1;
+            if(dims.d[0] == -1) dims.d[0] = 1;
             auto newTensor = make_shared<Tensor>(dims.nbDims, dims.d);
             newTensor->set_stream(context_->stream_);
             newTensor->set_workspace(workspace_);

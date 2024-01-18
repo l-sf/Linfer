@@ -16,10 +16,12 @@ file(GLOB_RECURSE CPPS
         ${PROJECT_SOURCE_DIR}/trt_common/*.cu
         )
 
-# set(OpenCV_DIR   "/home/lsf/Third_party/OPENCV_3_4_8/opencv/build")
 set(CUDA_DIR      "/usr/local/cuda")
 set(TENSORRT_DIR  "/home/lsf/Third_party/TensorRT-8.6.1.6")
 find_package(OpenCV REQUIRED)
+if(POLICY CMP0146)
+        cmake_policy(SET CMP0146 OLD)
+endif()
 find_package(CUDA REQUIRED)
 include_directories(
         ${PROJECT_SOURCE_DIR}

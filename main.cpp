@@ -44,9 +44,9 @@ void test_yolo(){
 //    performance("yolov8n.trt", 0, Yolo::Type::V8);
 //    batch_inference("yolov8s.trt", 0, Yolo::Type::V8);
 //    performance("yolov8s.trt", 0, Yolo::Type::V8);
-//    batch_inference("yolov8m.trt", 0, Yolo::Type::V8);
+    batch_inference("yolov8l.trt", 0, Yolo::Type::V8);
 //    performance("yolov8m.trt", 0, Yolo::Type::V8);
-    single_inference("yolov8l.trt", 0, Yolo::Type::V8);
+//    single_inference("yolov8l.trt", 0, Yolo::Type::V8);
 }
 
 void test_track(){
@@ -63,8 +63,8 @@ void test_yolop(){
 
 int main(){
 //    test_rtdetr();
-//    test_yolo();
-    test_yolop();
+    test_yolo();
+//    test_yolop();
 //    test_track();
 //    test_ptq();
     return 0;

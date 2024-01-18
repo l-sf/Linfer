@@ -3,6 +3,8 @@
 **/.idea/**
 **/.vscode/**
 **/build/**
+**/mot_imgs/**
+**/mot_infer_res/**
 **/infer_res/**
 **/pro
 **/*.so
