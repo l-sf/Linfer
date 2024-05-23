@@ -25,13 +25,16 @@ namespace CUDAKernel{
 	}
 
 	Norm Norm::None(){
-		return Norm();
+		return {};
 	}
 
 
     /// ---------------------- 核函数定义 ---------------------
 
-	__global__ void warp_affine_bilinear_and_normalize_plane_kernel(uint8_t* src, int src_line_size, int src_width, int src_height, float* dst, int dst_width, int dst_height, 
+	__global__ void warp_affine_bilinear_and_normalize_plane_kernel(
+        uint8_t* src, int src_line_size,
+        int src_width, int src_height,
+        float* dst, int dst_width, int dst_height,
 		uint8_t const_value_st, float* warp_affine_matrix_2_3, Norm norm, int edge){
 
 		int position = blockIdx.x * blockDim.x + threadIdx.x;

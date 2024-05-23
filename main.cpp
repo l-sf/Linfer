@@ -15,6 +15,8 @@ void inference_bytetrack(const string& engine_file, int gpuid, Yolo::Type type, 
 void infer_track(int Mode, const string& path);
 void inference_yolop(const string& engine_file, YoloP::Type type, int gpuid);
 void performance_yolop(const string& engine_file, YoloP::Type type, int gpuid);
+void inference_seg(const string& engine_file, int gpuid);
+void performance_seg(const string& engine_file, int gpuid);
 bool test_ptq();
 
 void test_rtdetr(){
@@ -61,11 +63,19 @@ void test_yolop(){
 //    performance_yolop("yolop-640.trt", YoloP::Type::V1, 0);
 }
 
+void test_seg(){
+//    inference_seg("ppliteseg_stdc2.trt", 0);
+//    inference_seg("mobileseg_mbn3.trt", 0);
+    performance_seg("ppliteseg_stdc2.trt", 0);
+    performance_seg("mobileseg_mbn3.trt", 0);
+}
+
 int main(){
 //    test_rtdetr();
-    test_yolo();
+//    test_yolo();
 //    test_yolop();
 //    test_track();
 //    test_ptq();
+    test_seg();
     return 0;
 }
