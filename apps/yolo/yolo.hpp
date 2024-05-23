@@ -26,7 +26,7 @@ namespace Yolo{
                 :left(left), top(top), right(right), bottom(bottom), confidence(confidence), label(label){}
     };
 
-    typedef std::vector<Box> BoxArray;
+    using BoxArray = vector<Box>;
 
     enum class Type : int{
         V5 = 0,

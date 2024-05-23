@@ -91,7 +91,7 @@ public:
                 Job& job = jobs[i];
                 job.pro = std::make_shared<std::promise<Output>>();
                 if(!preprocess(job, inputs[i])){
-                    job.pro->set_value(Output());
+                    job.pro->set_value(Output{});
                 }
                 results[i] = job.pro->get_future();
             }
