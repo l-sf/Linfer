@@ -79,7 +79,7 @@
 
 2. compile engine
 
-   1. 下载 onnx 模型 [google driver](https://drive.google.com/drive/folders/16ZqDaxlWm1aDXQsjsxLS7yFL0YqzHbxT?usp=sharing) 或者按照教程导出，教程在各文件夹READEME
+   1. 下载 onnx 模型 [google driver](https://drive.google.com/drive/folders/16ZqDaxlWm1aDXQsjsxLS7yFL0YqzHbxT?usp=sharing) 或者按照教程导出，教程在各文件夹README
 
    2. ```bash
       cd Linfer/workspace
@@ -116,11 +116,13 @@
 |   yolov7   | **int8**  |  640x640   |   49.55   |
 |  yolov8_n  |   fp16    |  640x640   |  121.94   |
 |  yolov8_s  |   fp16    |  640x640   |   81.40   |
-|  yolov8_l  |   fp16    |  640x640   |    13     |
-| yolov10_n  |   fp16    |  640x640   |           |
-| yolov10_s  |   fp16    |  640x640   |           |
-| yolov10_l  |   fp16    |  640x640   |           |
-| rtdetr_r50 |   fp16    |  640x640   |    12     |
+|  yolov8_m  |   fp16    |  640x640   |   41.14   |
+|  yolov8_l  |   fp16    |  640x640   |   27.52   |
+| yolov10_n  |   fp16    |  640x640   |  115.13   |
+| yolov10_s  |   fp16    |  640x640   |   73.65   |
+| yolov10_m  |   fp16    |  640x640   |   39.51   |
+| yolov10_l  |   fp16    |  640x640   |   26.41   |
+| rtdetr_r50 |   fp16    |  640x640   |   11.25   |
 | lighttrack |   fp16    |  256x256   |   90.91   |
 |  ostrack   |   fp16    |  256x256   |   37.04   |
 |   yolop    |   fp16    |  640x640   |   31.4    |
