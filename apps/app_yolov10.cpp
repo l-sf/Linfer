@@ -1,7 +1,7 @@
 
 #include <fstream>
 #include <opencv2/opencv.hpp>
-#include "rtdetr/rtdetr.hpp"
+#include "yolov10/yolov10.hpp"
 
 using namespace std;
 
@@ -62,22 +62,21 @@ inline string get_file_name(const string& path, bool include_suffix){
     return path.substr(p, u - p);
 }
 
-
-void performance(const string& engine_file, int gpuid){
-    auto infer = RTDETR::create_infer(engine_file, gpuid, 0.5);
+void performance_v10(const string& engine_file, int gpuid){
+    auto infer = YOLOV10::create_infer(engine_file, gpuid, 0.5);
     if(infer == nullptr){
         printf("infer is nullptr.\n");
         return;
     }
 
-    int batch = 8;
+    int batch = 1;
     std::vector<cv::Mat> images{cv::imread("imgs/bus.jpg"), cv::imread("imgs/girl.jpg"),
                                 cv::imread("imgs/group.jpg"), cv::imread("imgs/yq.jpg")};
     for (int i = images.size(); i < batch; ++i)
         images.push_back(images[i % 4]);
 
     // warmup
-    vector<shared_future<RTDETR::BoxArray>> boxes_array;
+    vector<shared_future<YOLOV10::BoxArray>> boxes_array;
     for(int i = 0; i < 10; ++i)
         boxes_array = infer->commits(images);
     boxes_array.back().get();
@@ -97,9 +96,8 @@ void performance(const string& engine_file, int gpuid){
     printf("Average time: %.2f ms, FPS: %.2f\n", engine_file.c_str(), avg_time, 1000 / avg_time);
 }
 
-
-void batch_inference(const string& engine_file, int gpuid){
-    auto infer = RTDETR::create_infer(engine_file, gpuid, 0.5);
+void batch_inference_v10(const string& engine_file, int gpuid){
+    auto infer = YOLOV10::create_infer(engine_file, gpuid, 0.5);
     if(infer == nullptr){
         printf("infer is nullptr.\n");
         return;
@@ -116,13 +114,13 @@ void batch_inference(const string& engine_file, int gpuid){
         images.emplace_back(image);
     }
 
-    vector<shared_future<RTDETR::BoxArray>> boxes_array;
+    vector<shared_future<YOLOV10::BoxArray>> boxes_array;
     boxes_array = infer->commits(images);
 
     // 等待全部推理结束
     boxes_array.back().get();
 
-    string root_res = "infer_res/rtdetr";
+    string root_res = "infer_res/yolov10";
     for(int i = 0; i < boxes_array.size(); ++i){
         cv::Mat image = images[i];
         auto boxes = boxes_array[i].get();
@@ -145,8 +143,8 @@ void batch_inference(const string& engine_file, int gpuid){
 }
 
 
-void single_inference(const string& engine_file, int gpuid){
-    auto infer = RTDETR::create_infer(engine_file, gpuid, 0.6);
+void single_inference_v10(const string& engine_file, int gpuid){
+    auto infer = YOLOV10::create_infer(engine_file, gpuid, 0.6);
     if(infer == nullptr){
         printf("infer is nullptr.\n");
         return;
@@ -168,4 +166,6 @@ void single_inference(const string& engine_file, int gpuid){
     }
     cv::imwrite("infer_res/result.jpg", image);
 }
+
+
 

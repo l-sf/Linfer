@@ -106,15 +106,55 @@ trtexec --onnx=./onnx_models/yolov8l.onnx \
 
 echo ""
 echo ""
+echo "************************ compile yolov10 models ***************************"
+echo ""
+trtexec --onnx=./onnx_models/yolov10n.onnx \
+		--saveEngine=./yolov10n.trt \
+		--buildOnly \
+		--minShapes=images:1x3x640x640 \
+		--optShapes=images:1x3x640x640 \
+		--maxShapes=images:8x3x640x640 \
+		--fp16
+
+echo ""
+trtexec --onnx=./onnx_models/yolov10s.onnx \
+		--saveEngine=./yolov10s.trt \
+		--buildOnly \
+		--minShapes=images:1x3x640x640 \
+		--optShapes=images:1x3x640x640 \
+		--maxShapes=images:8x3x640x640 \
+		--fp16
+
+echo ""
+trtexec --onnx=./onnx_models/yolov10m.onnx \
+		--saveEngine=./yolov10m.trt \
+		--buildOnly \
+		--minShapes=images:1x3x640x640 \
+		--optShapes=images:1x3x640x640 \
+		--maxShapes=images:8x3x640x640 \
+		--fp16
+
+echo ""
+trtexec --onnx=./onnx_models/yolov10l.onnx \
+		--saveEngine=./yolov10l.trt \
+		--buildOnly \
+		--minShapes=images:1x3x640x640 \
+		--optShapes=images:1x3x640x640 \
+		--maxShapes=images:8x3x640x640 \
+		--fp16
+
+
+echo ""
+echo ""
 echo "************************ compile RT-DETR models ***************************"
 echo ""
 trtexec --onnx=./onnx_models/rtdetr_r50vd_6x_coco_dynamic.onnx \
 		--saveEngine=./rtdetr_r50vd_6x_coco_dynamic_fp16.trt \
 		--buildOnly \
-        --minShapes=image:1x3x640x640 \
-        --optShapes=image:1x3x640x640 \
-        --maxShapes=image:8x3x640x640 \
-        --fp16
+    --minShapes=image:1x3x640x640 \
+    --optShapes=image:1x3x640x640 \
+    --maxShapes=image:8x3x640x640 \
+    --fp16
 
 
 echo ""
@@ -164,3 +204,29 @@ trtexec --onnx=./onnx_models/yolopv2-480x640.onnx \
 		--buildOnly \
 		--fp16
 
+
+echo ""
+echo ""
+echo "************************ compile PPSeg model ***************************"
+echo ""
+trtexec --onnx=./onnx_models/mobileseg_mbn3.onnx \
+		--saveEngine=./mobileseg_mbn3.trt \
+		--buildOnly \
+		--fp16
+
+echo ""
+trtexec --onnx=./onnx_models/ppliteseg_stdc2.onnx \
+		--saveEngine=./ppliteseg_stdc2.trt \
+		--buildOnly \
+		--fp16
+
+
+
+echo ""
+echo ""
+echo "************************ compile MonoDepth model ***************************"
+echo ""
+trtexec --onnx=./onnx_models/litemono-b.onnx \
+		--saveEngine=./litemono-b.trt \
+		--buildOnly \
+		--fp16

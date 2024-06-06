@@ -1,6 +1,3 @@
-//
-// Created by lsf on 24-5-20.
-//
 
 #ifndef PPSEG_HPP
 #define PPSEG_HPP

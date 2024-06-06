@@ -1,6 +1,3 @@
-//
-// Created by lsf on 24-5-20.
-//
 
 #include "ppseg.hpp"
 
@@ -91,6 +88,7 @@ namespace PPSeg{
                             parray, input_width_ * sizeof(int32_t));
             cv::Mat out;
             out_img.convertTo(out, CV_8UC1);
+            cv::resize(out, out, image.size(), 0, 0, cv::INTER_NEAREST);
 
             return out;
         }

@@ -18,7 +18,7 @@
 
 using namespace std;
 
-class Logger : public nvinfer1::ILogger{
+class LLogger : public nvinfer1::ILogger{
 public:
     void log(Severity severity, const char* msg) noexcept override {
         if (severity == Severity::kINTERNAL_ERROR) {
@@ -38,7 +38,7 @@ public:
         }
     }
 };
-static Logger gLogger;
+static LLogger gLogger;
 
 template<typename _T>
 static shared_ptr<_T> make_nvshared(_T* ptr){

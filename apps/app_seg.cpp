@@ -41,7 +41,7 @@ void inference_seg(const string& engine_file, int gpuid){
     auto image = cv::imread("imgs/frame_3.jpg");
     auto res = predictor->seg(image);
 
-    cv::Mat color_img(res.size(), CV_8UC3, cv::Scalar(0, 0, 0));
+    cv::Mat color_img(image.size(), CV_8UC3, cv::Scalar(0, 0, 0));
     // 遍历每个像素点，根据类别索引应用颜色映射
     for (int i = 0; i < res.rows; ++i) {
         for (int j = 0; j < res.cols; ++j) {
@@ -51,11 +51,9 @@ void inference_seg(const string& engine_file, int gpuid){
                                                           PPSeg::color_map[pixel_value][0]);
         }
     }
-    cv::Mat out_color_img;
-    cv::resize(color_img, out_color_img, image.size());
-    out_color_img.convertTo(out_color_img, CV_8UC3);
+    cv::Mat out_color_img(image.size(), CV_8UC3, cv::Scalar(0, 0, 0));
     float alpha = 0.7;
-    out_color_img = (1 - alpha) * image + alpha * out_color_img;
+    out_color_img = (1 - alpha) * image + alpha * color_img;
     cv::imwrite("infer_res/seg_frame_3.jpg", out_color_img);
 }
 
