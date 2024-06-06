@@ -12,6 +12,10 @@
 
 ## Update News
 
+🚀（2024.06.06）支持目标检测算法Yolov10！
+
+🚀（2024.05.23）支持语义分割算法：PaddleSeg中的PP-LiteSeg、MobileSeg，轻量高效，适合部署！
+
 🚀（2023.12.03）支持全景驾驶感知算法 YOLOPv2，Better、Faster、Stronger ！
 
 🚀（2023.11.06）支持全景驾驶感知算法 YOLOP ！
@@ -28,7 +32,7 @@
 
 ## Highlights
 
-- 支持全景驾驶感知 YOLOPv2，目标检测 RT-DETR，Yolo 5/X/7/8 ，多目标跟踪 Bytetrack，单目标跟踪 OSTrack、LightTrack；
+- 支持全景驾驶感知 YOLOPv2，目标检测 RT-DETR，Yolov5/X/7/8/10 ，多目标跟踪 Bytetrack，单目标跟踪 OSTrack、LightTrack；
 - 预处理和后处理实现CUDA核函数，在 jetson 边缘端也能高性能推理；
 - 封装Tensor、Infer，实现内存复用、CPU/GPU 内存自动拷贝、引擎上下文管理、输入输出绑定等；
 - 推理过程实现生产者消费者模型，实现预处理和推理的并行化，进一步提升性能；
@@ -75,7 +79,7 @@
 
 2. compile engine
 
-   1. 下载 onnx 模型 [google driver](https://drive.google.com/drive/folders/16ZqDaxlWm1aDXQsjsxLS7yFL0YqzHbxT?usp=sharing) 
+   1. 下载 onnx 模型 [google driver](https://drive.google.com/drive/folders/16ZqDaxlWm1aDXQsjsxLS7yFL0YqzHbxT?usp=sharing) 或者按照教程导出，教程在各文件夹READEME
 
    2. ```bash
       cd Linfer/workspace
@@ -113,6 +117,9 @@
 |  yolov8_n  |   fp16    |  640x640   |  121.94   |
 |  yolov8_s  |   fp16    |  640x640   |   81.40   |
 |  yolov8_l  |   fp16    |  640x640   |    13     |
+| yolov10_n  |   fp16    |  640x640   |           |
+| yolov10_s  |   fp16    |  640x640   |           |
+| yolov10_l  |   fp16    |  640x640   |           |
 | rtdetr_r50 |   fp16    |  640x640   |    12     |
 | lighttrack |   fp16    |  256x256   |   90.91   |
 |  ostrack   |   fp16    |  256x256   |   37.04   |

@@ -163,7 +163,7 @@
 1. 下载源码
 
    ```bash
-   https://github.com/ultralytics/ultralytics.git
+   git clone https://github.com/ultralytics/ultralytics.git
    cd ultralytics
    python setup.py develop
    ```
@@ -180,8 +180,8 @@
 3. 修改 ultralytics/engine/exporter.py 如下
 
    ```python
-   # line 313
-   # dynamic = self.args.dynamic
+   # line 312
+   output_names = ["output0", "output1"] if isinstance(self.model, SegmentationModel) else ["output"]
    dynamic = True
            if dynamic:
                dynamic = {'images': {0: 'batch'}}  # shape(1,3,640,640)
@@ -189,7 +189,7 @@
                    dynamic['output0'] = {0: 'batch', 2: 'anchors'}  # shape(1, 116, 8400)
                    dynamic['output1'] = {0: 'batch', 2: 'mask_height', 3: 'mask_width'}  # shape(1,32,160,160)
                elif isinstance(self.model, DetectionModel):
-                   dynamic['output'] = {0: 'batch', 2: 'anchors'}  # shape(1, 84, 8400)
+                   dynamic['output'] = {0: 'batch'}  # shape(1, 84, 8400)
    ```
 
 4. 导出onnx
