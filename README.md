@@ -127,6 +127,8 @@
 |  ostrack   |   fp16    |  256x256   |   37.04   |
 |   yolop    |   fp16    |  640x640   |   31.4    |
 |  yolopv2   |   fp16    |  480x640   |   21.9    |
+| PP-LiteSeg |   fp16    |  256x512   |  129.81   |
+| MobileSeg  |   fp16    |  256x512   |  140.36   |
 
 
 
