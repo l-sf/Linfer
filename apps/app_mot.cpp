@@ -1,12 +1,13 @@
-
-
 #include "trt_common/ilogger.hpp"
 #include "yolo/yolo.hpp"
 #include <opencv2/opencv.hpp>
 #include "bytetrack/BYTETracker.h"
 #include <cstdio>
+#include <filesystem>
 
 using namespace std;
+namespace fs = std::filesystem;
+
 
 template<typename Cond>
 static vector<Object> det2tracks(const Yolo::BoxArray& array, const Cond& cond){
@@ -30,7 +31,7 @@ static vector<Object> det2tracks(const Yolo::BoxArray& array, const Cond& cond){
 }
 
 
-void inference_bytetrack(const string& engine_file, int gpuid, Yolo::Type type, const string& video_file){
+void inference_bytetrack(const string& engine_file, int gpuid, Yolo::Type type, const string& video_file, const string& output_save_path){
 
     auto engine = Yolo::create_infer(
             engine_file,                // engine file
@@ -59,8 +60,15 @@ void inference_bytetrack(const string& engine_file, int gpuid, Yolo::Type type, 
                                         ).set_per_frame_motion({0.1,  0.1,  0.1,  0.1,
                                                                        0.2,  0.2,  1,    0.2}
                                         ).set_max_time_lost(150);
+    
+    string output_path = output_save_path;
+    if (output_path.empty())
+    {
+        fs::path input_path(video_file);
+        output_path = input_path.stem().string() + "_output" + input_path.extension().string();
+    }
 
-    cv::VideoWriter writer("videos/res_mot.mp4", cv::VideoWriter::fourcc('M', 'P', 'E', 'G'), fps, cv::Size(width, height));
+    cv::VideoWriter writer(output_path, cv::VideoWriter::fourcc('M', 'P', 'E', 'G'), fps, cv::Size(width, height));
     auto cond = [](const Yolo::Box& b){return b.label == 0;};
 
     shared_future<vector<Yolo::Box>> prev_fut;
@@ -98,4 +106,3 @@ void inference_bytetrack(const string& engine_file, int gpuid, Yolo::Type type, 
     writer.release();
     printf("Done.\n");
 }
-

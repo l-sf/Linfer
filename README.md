@@ -4,6 +4,8 @@
 
 ![Language](https://img.shields.io/badge/language-c++-brightgreen) ![Language](https://img.shields.io/badge/CUDA-12.1-brightgreen) ![Language](https://img.shields.io/badge/TensorRT-8.6.1.6-brightgreen) ![Language](https://img.shields.io/badge/OpenCV-4.5.5-brightgreen) ![Language](https://img.shields.io/badge/ubuntu-20.04-brightorigin)
 
+[English](README_EN.md) | 简体中文
+
 ## Introduction
 
 基于 TensorRT 的 C++ 高性能推理库。

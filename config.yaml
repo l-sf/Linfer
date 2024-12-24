@@ -1,0 +1,82 @@
+tasks:
+  # - task: "rtdetr"
+  #   subtasks:
+  #     - type: "performance"
+  #       engine_file: "rtdetr_r50vd_6x_coco_dynamic_fp16.trt"
+  #       gpuid: 0
+  #       input_dir: "/home/e300/mahmood/code/mLinfer/workspace/imgs"
+  #     - type: "batch_inference"
+  #       engine_file: "rtdetr_r50vd_6x_coco_dynamic_fp16.trt"
+  #       gpuid: 0
+  #       input_dir: "/home/e300/mahmood/code/mLinfer/workspace/imgs"
+  #       output_dir: "/home/e300/mahmood/code/mLinfer/workspace/result_images_rtdetr"
+  #     - type: "single_inference"
+  #       engine_file: "rtdetr_r50vd_6x_coco_dynamic_fp16.trt"
+  #       gpuid: 0
+  #       input_img: "/home/e300/Downloads/1684008869189.jpg"
+  #       output_img_path: "/home/e300/mahmood/code/mLinfer/workspace/result_images_single_rtdetr/1684008869189.jpg"
+  - task: "yolov10"
+    subtasks:
+      - type: "performance_v10"
+        engine_file: "/home/e300/mahmood/code/mLinfer/workspace/yolov10s.trt"
+        gpuid: 0
+        input_dir: "/home/e300/mahmood/code/mLinfer/workspace/imgs"
+      - type: "batch_inference_v10"
+        engine_file: "/home/e300/mahmood/code/mLinfer/workspace/yolov10s.trt"
+        gpuid: 0
+        input_dir: "/home/e300/mahmood/code/mLinfer/workspace/imgs"
+        output_dir: "/home/e300/mahmood/code/mLinfer/workspace/result_images_yolov10"
+      - type: "single_inference_v10"
+        engine_file: "/home/e300/mahmood/code/mLinfer/workspace/yolov10s.trt"
+        gpuid: 0
+        input_img: "/home/e300/Downloads/1684008869189.jpg"
+        output_img_path: "/home/e300/mahmood/code/mLinfer/workspace/result_images_single_yolov10/1684008869189.jpg"
+  # - task: "yolov10"
+  #   subtasks:
+  #     - type: "performance_v10"
+  #       engine_file: "yolov10n.trt"
+  #       gpuid: 0
+  # - task: "yolo"
+  #   subtasks:
+  #     - type: "batch_inference"
+  #       engine_file: "/home/e300/mahmood/code/Linfer/workspace/yolov8s.trt"
+  #       gpuid: 0
+  #       yolo_type: "V8"
+  #       input_dir: "/home/e300/mahmood/code/mLinfer/workspace/imgs"
+  #       output_dir: "/home/e300/mahmood/code/mLinfer/workspace/result_images"
+  #     - type: "performance"
+  #       engine_file: "/home/e300/mahmood/code/Linfer/workspace/yolov8s.trt"
+  #       gpuid: 0
+  #       yolo_type: "V8"
+  #       input_dir: "/home/e300/mahmood/code/mLinfer/workspace/imgs"
+  #     - type: "single_inference"
+  #       engine_file: "/home/e300/mahmood/code/Linfer/workspace/yolov8s.trt"
+  #       gpuid: 0
+  #       yolo_type: "V8"
+  #       input_img: "/home/e300/Downloads/1684008869189.jpg"
+  #       output_img_path: "/home/e300/mahmood/code/mLinfer/workspace/result_images_single/1684008869189.jpg"
+  # - task: "track"
+  #   subtasks:
+  #     - type: "inference_bytetrack"
+  #       engine_file: "/home/e300/mahmood/code/Linfer/workspace/yolov8s.trt"
+  #       gpuid: 0
+  #       yolo_type: "V8"
+  #       video_file: "/home/e300/mahmood/code/Linfer/workspace/videos/snow.mp4"
+  #       output_save_path: ""
+  # - task: "yolop"
+  #   subtasks:
+  #     - type: "inference_yolop"
+  #       engine_file: "yolopv2-480x640.trt"
+  #       yolo_type: "V2"
+  #       gpuid: 0
+  # - task: "seg"
+  #   subtasks:
+  #       - type: "performance_seg"
+  #         engine_file: "/home/e300/mahmood/code/mLinfer/workspace/mobileseg_mbn3.trt"
+  #         gpuid: 0
+  #         input_dir: "/home/e300/mahmood/code/mLinfer/workspace/imgs"
+  #       - type: "inference_seg"
+  #         engine_file: "/home/e300/mahmood/code/mLinfer/workspace/mobileseg_mbn3.trt"
+  #         gpuid: 0
+  #         input_img: "/home/e300/mahmood/code/mLinfer/workspace/imgs/frame_3.jpg"
+  #         output_img_path: "/home/e300/mahmood/code/mLinfer/workspace/result_images_seg/seg_frame_3.jpg"

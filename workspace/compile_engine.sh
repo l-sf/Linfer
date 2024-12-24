@@ -210,9 +210,9 @@ trtexec --onnx=./onnx_models/yolov10l.onnx \
 # echo "************************ compile PPSeg model ***************************"
 # echo ""
 # trtexec --onnx=./onnx_models/mobileseg_mbn3.onnx \
-# 		--saveEngine=./mobileseg_mbn3.trt \
-# 		--buildOnly \
-# 		--fp16
+		# --saveEngine=./mobileseg_mbn3.trt \
+		# --buildOnly \
+		# --fp16
 
 # echo ""
 # trtexec --onnx=./onnx_models/ppliteseg_stdc2.onnx \

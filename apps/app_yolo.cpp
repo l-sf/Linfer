@@ -1,7 +1,9 @@
-
 #include <fstream>
 #include <opencv2/opencv.hpp>
 #include "yolo/yolo.hpp"
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 using namespace std;
 
@@ -62,8 +64,7 @@ inline string get_file_name(const string& path, bool include_suffix){
     return path.substr(p, u - p);
 }
 
-
-void performance(const string& engine_file, int gpuid, Yolo::Type type){
+void performance(const string& engine_file, int gpuid, Yolo::Type type, const string& input_dir){
     auto infer = Yolo::create_infer(engine_file, type, gpuid, 0.3, 0.45);
     if(infer == nullptr){
         printf("infer is nullptr.\n");
@@ -71,59 +72,94 @@ void performance(const string& engine_file, int gpuid, Yolo::Type type){
     }
 
     int batch = 8;
-    std::vector<cv::Mat> images{cv::imread("imgs/bus.jpg"), cv::imread("imgs/girl.jpg"),
-                                cv::imread("imgs/group.jpg"), cv::imread("imgs/yq.jpg")};
-    for (int i = images.size(); i < batch; ++i)
-        images.push_back(images[i % 4]);
+    vector<cv::String> files_;
+    files_.reserve(100);
+    cv::glob(input_dir + "/*.jpg", files_, true);
+    vector<string> files(files_.begin(), files_.end());
 
-    // warmup
+    if (files.empty()) {
+        printf("No .jpg image files found in the input directory: %s\n", input_dir.c_str());
+        return;
+    }
+
+    std::vector<cv::Mat> images;
+    for(const auto& file : files){
+        auto image = cv::imread(file);
+        if(image.empty()) {
+            printf("Error reading image file: %s\n", file.c_str());
+            continue;
+        }
+        images.emplace_back(image);
+    }
+
+    if (images.empty()) {
+        printf("No valid images to process after reading files from: %s\n", input_dir.c_str());
+        return;
+    }
+
+    for (int i = images.size(); i < batch; ++i)
+        images.push_back(images[i % images.size()]);
+
+    printf("Number of images to process: %zu\n", images.size());
+
+    // Warmup
     vector<shared_future<Yolo::BoxArray>> boxes_array;
     for(int i = 0; i < 10; ++i)
         boxes_array = infer->commits(images);
     boxes_array.back().get();
     boxes_array.clear();
 
-    // 测试 100 轮
+    // Test 100 rounds
     const int ntest = 100;
     auto start = std::chrono::steady_clock::now();
-    for(int i  = 0; i < ntest; ++i)
+    for(int i = 0; i < ntest; ++i)
         boxes_array = infer->commits(images);
-    // 等待全部推理结束
+    // Wait for all inference to finish
     boxes_array.back().get();
 
     std::chrono::duration<double> during = std::chrono::steady_clock::now() - start;
     double all_time = 1000.0 * during.count();
     float avg_time = all_time / ntest / images.size();
-    printf("Average time: %.2f ms, FPS: %.2f\n", engine_file.c_str(), avg_time, 1000 / avg_time);
+    printf("Average time for %s: %.2f ms, FPS: %.2f\n", engine_file.c_str(), avg_time, 1000 / avg_time);
 }
 
 
-void batch_inference(const string& engine_file, int gpuid, Yolo::Type type){
+void batch_inference(const string& engine_file, int gpuid, Yolo::Type type, const string& input_dir, const string& output_dir){
     auto infer = Yolo::create_infer(engine_file, type, gpuid, 0.25, 0.45);
     if(infer == nullptr){
         printf("infer is nullptr.\n");
         return;
     }
+    fs::create_directories(output_dir);
 
     vector<cv::String> files_;
-    files_.reserve(100);
-    cv::glob("imgs/*.jpg", files_, true);
+     files_.reserve(100);
+    cv::glob(input_dir + "/*.jpg", files_, true);
     vector<string> files(files_.begin(), files_.end());
-
+    if (files.empty()) {
+        printf("No image files found in the input directory: %s\n", input_dir.c_str());
+        return;
+    }
     vector<cv::Mat> images;
     for(const auto& file : files){
         auto image = cv::imread(file);
+        if(image.empty()){
+           printf("Error reading image file: %s\n", file.c_str());
+            continue;
+        }
         images.emplace_back(image);
     }
-
+    if (images.empty()) {
+        printf("No valid images to process after reading files from: %s\n", input_dir.c_str());
+        return;
+    }
     vector<shared_future<Yolo::BoxArray>> boxes_array;
     boxes_array = infer->commits(images);
 
     // 等待全部推理结束
     boxes_array.back().get();
 
-    string root_res = "infer_res";
-    for(int i = 0; i < boxes_array.size(); ++i){
+   for(int i = 0; i < boxes_array.size(); ++i){
         cv::Mat image = images[i];
         auto boxes = boxes_array[i].get();
         for(auto & ibox : boxes){
@@ -138,20 +174,24 @@ void batch_inference(const string& engine_file, int gpuid, Yolo::Type type){
             cv::putText(image, caption, cv::Point(ibox.left, ibox.top-5), 0, 1, cv::Scalar::all(0), 2, 16);
         }
         string file_name = get_file_name(files[i], false);
-        string save_path = cv::format("%s/%s.jpg", root_res.c_str(), file_name.c_str());
+        string save_path = cv::format("%s/%s.jpg", output_dir.c_str(), file_name.c_str());
         cv::imwrite(save_path, image);
         printf("Save to %s, %d object\n", save_path.c_str(), boxes.size());
     }
 }
 
-void single_inference(const string& engine_file, int gpuid, Yolo::Type type){
+void single_inference(const string& engine_file, int gpuid, Yolo::Type type, const string& input_img, const string& output_img_path){
     auto infer = Yolo::create_infer(engine_file, type, gpuid, 0.25, 0.45);
     if(infer == nullptr){
         printf("infer is nullptr.\n");
         return;
     }
 
-    auto image = cv::imread("imgs/bus.jpg");
+    auto image = cv::imread(input_img);
+    if(image.empty()){
+        printf("Error reading image file: %s\n", input_img.c_str());
+        return;
+    }
     auto boxes = infer->commit(image).get();
     for(auto& ibox : boxes){
         cv::Scalar color;
@@ -164,6 +204,9 @@ void single_inference(const string& engine_file, int gpuid, Yolo::Type type){
         cv::rectangle(image, cv::Point(ibox.left-2, ibox.top-32), cv::Point(ibox.left + text_width, ibox.top), color, -1);
         cv::putText(image, caption, cv::Point(ibox.left, ibox.top-5), 0, 1, cv::Scalar::all(0), 2, 16);
     }
-    cv::imwrite("infer_res/result.jpg", image);
-}
+    fs::path path(output_img_path);
+    fs::create_directories(path.parent_path());
 
+    cv::imwrite(output_img_path, image);
+    printf("Save to %s\n", output_img_path.c_str());
+}
